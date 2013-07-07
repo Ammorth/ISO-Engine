@@ -127,35 +127,36 @@ void ISO::map::preDraw(sf::Rect<int> camera)
 		}
 		while(y >= 0 && x < int(size_x))
 		{
-			int x_draw = camera.left + x * (tile_width / 2) - y * (tile_width / 2);
-			int y_draw = camera.top + x * (tile_height / 2) + y * (tile_height / 2) + tile_height/2 * mapTiles[x][y].getHeight() ;
-
-			if(x_draw + tile_size < 0 || x_draw > camera.width || y_draw + tile_size < 0 || y_draw > camera.height)
+			for(unsigned int height = 0; height <= mapTiles[x][y].getHeight(); ++height)
 			{
-				y--;
-				x++;
-				continue;
+				int x_draw = camera.left + x * (tile_width / 2) - y * (tile_width / 2);
+				int y_draw = camera.top + x * (tile_height / 2) + y * (tile_height / 2) - tile_height/2 * static_cast<int>(height);
+
+				if(x_draw + tile_size < 0 || x_draw > camera.width || y_draw + tile_size < 0 || y_draw > camera.height)
+				{
+					continue;
+				}
+
+				sf::Vertex v1;
+				sf::Vertex v2;
+				sf::Vertex v3;
+				sf::Vertex v4;
+				v1.position = sf::Vector2f( static_cast<float>(x_draw)				, static_cast<float>(y_draw));
+				v2.position = sf::Vector2f( static_cast<float>(x_draw + tile_width)	, static_cast<float>(y_draw));
+				v3.position = sf::Vector2f( static_cast<float>(x_draw + tile_width)	, static_cast<float>(y_draw + tile_width));
+				v4.position = sf::Vector2f( static_cast<float>(x_draw)				, static_cast<float>(y_draw + tile_width));
+				sf::Rect<unsigned int> textureRect = mapTiles[x][y].getTextureRect();
+				v1.texCoords = sf::Vector2f(float(textureRect.left)						, float(textureRect.top));
+				v2.texCoords = sf::Vector2f(float(textureRect.left + textureRect.width)	, float(textureRect.top));
+				v3.texCoords = sf::Vector2f(float(textureRect.left + textureRect.width)	, float(textureRect.top + textureRect.height));
+				v4.texCoords = sf::Vector2f(float(textureRect.left)						, float(textureRect.top + textureRect.height));
+
+				tilesToDraw.append(v1);
+				tilesToDraw.append(v2);
+				tilesToDraw.append(v3);
+				tilesToDraw.append(v4);
+	
 			}
-
-			sf::Vertex v1;
-			sf::Vertex v2;
-			sf::Vertex v3;
-			sf::Vertex v4;
-			v1.position = sf::Vector2f( static_cast<float>(x_draw)				, static_cast<float>(y_draw));
-			v2.position = sf::Vector2f( static_cast<float>(x_draw + tile_width)	, static_cast<float>(y_draw));
-			v3.position = sf::Vector2f( static_cast<float>(x_draw + tile_width)	, static_cast<float>(y_draw + tile_width));
-			v4.position = sf::Vector2f( static_cast<float>(x_draw)				, static_cast<float>(y_draw + tile_width));
-			sf::Rect<unsigned int> textureRect = mapTiles[x][y].getTextureRect();
-			v1.texCoords = sf::Vector2f(float(textureRect.left)						, float(textureRect.top));
-			v2.texCoords = sf::Vector2f(float(textureRect.left + textureRect.width)	, float(textureRect.top));
-			v3.texCoords = sf::Vector2f(float(textureRect.left + textureRect.width)	, float(textureRect.top + textureRect.height));
-			v4.texCoords = sf::Vector2f(float(textureRect.left)						, float(textureRect.top + textureRect.height));
-
-			tilesToDraw.append(v1);
-			tilesToDraw.append(v2);
-			tilesToDraw.append(v3);
-			tilesToDraw.append(v4);
-
 			y--;
 			x++;
 		}

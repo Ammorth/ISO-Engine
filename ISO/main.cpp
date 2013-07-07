@@ -71,6 +71,14 @@ int main()
 	ISO::tileset grass("assets/textures/tiles/grass.png");
 	ISO::map mymap(10,10,2,&grass);
 
+	for(unsigned int i = 0; i < 10; ++i)
+	{
+		for(unsigned int j = 0; j < 10; ++j)
+		{
+			mymap.getMapTile(i,j)->setHeight(rand() % 2);
+		}
+	}
+
 	sf::Uint64 targetFPS = 60;
 	sf::Uint64 targetMicrosecond = MICROSECONDS_PER_SECOND / static_cast<unsigned long int>(targetFPS);
 
