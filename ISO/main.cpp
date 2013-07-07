@@ -14,9 +14,9 @@ class job_preDrawMap : public ISO::jobPool::job
 {
 public:
 	ISO::map* map;
-	sf::Vector2f* cam;
+	sf::Rect<int>* cam;
 
-	job_preDrawMap(ISO::map* whichMap = NULL, sf::Vector2f* camera = NULL) : map(whichMap), cam(camera) {}
+	job_preDrawMap(ISO::map* whichMap = NULL, sf::Rect<int>* camera = NULL) : map(whichMap), cam(camera) {}
 
 private:
 	void operator()()
@@ -29,27 +29,27 @@ class job_updateCamera : public ISO::jobPool::job
 {
 public:
 	std::vector<bool>* keys;
-	sf::Vector2f* cam;
+	sf::Rect<int>* cam;
 
-	job_updateCamera(sf::Vector2f* camera = NULL, std::vector<bool>* keyStates = NULL) : cam(camera), keys(keyStates) {}
+	job_updateCamera(sf::Rect<int>* camera = NULL, std::vector<bool>* keyStates = NULL) : cam(camera), keys(keyStates) {}
 private:
 	void operator()()
 	{
 		if((*keys)[sf::Keyboard::Left])
 		{
-			cam->x += 5;
+			cam->left += 5;
 		}
 		if((*keys)[sf::Keyboard::Right])
 		{
-			cam->x -= 5;
+			cam->left -= 5;
 		}
 		if((*keys)[sf::Keyboard::Up])
 		{
-			cam->y += 5;
+			cam->top += 5;
 		}
 		if((*keys)[sf::Keyboard::Down])
 		{
-			cam->y -= 5;
+			cam->top -= 5;
 		}
 	}
 };
@@ -78,7 +78,7 @@ int main()
 	sf::Uint64 currentTime = gameClock.getElapsedTime().asMicroseconds();
 	sf::Uint64 accumulator = 0;
 
-	sf::Vector2f camera;
+	sf::Rect<int> camera(0,0,800,600);
 
 	ISO::jobPool workPool;
 
