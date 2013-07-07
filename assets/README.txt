@@ -1,0 +1,1 @@
+Place assets folder in same directory as the executable.
