@@ -10,9 +10,6 @@
 namespace ISO
 {
 
-
-
-
 // A class which allows you to create jobs and schedule them on parallel threads.
 // supports job dependancies
 class jobPool
@@ -41,11 +38,6 @@ public:
 		{
 		}
 
-		void init()
-		{
-			setState(state::initialized);
-		}
-
 		bool addDependancy(job* required)
 		{
 			stateMutex.lock();
@@ -53,6 +45,18 @@ public:
 			if(curState == initialized)
 			{
 				r = dependsOn.insert(required).second;
+			}
+			stateMutex.unlock();
+			return r;
+		}
+
+		bool removeDependancy(job* notrequired)
+		{
+			stateMutex.lock();
+			bool r = false;
+			if(curState == initialized || curState == complete)
+			{
+				r = (dependsOn.erase(notrequired) == 1);
 			}
 			stateMutex.unlock();
 			return r;
@@ -66,7 +70,7 @@ public:
 			return s;
 		}
 
-		// needs to overload
+		// derived classes need to overload this operator
 		virtual void operator()()
 		{
 		}
@@ -102,6 +106,7 @@ public:
 	jobPool()
 	{
 		// hold the master lock while we setup
+		jobDone = false;
 		workingThreads = 0;
 		killMaster = false;
 		masterMutex.lock();
@@ -145,31 +150,27 @@ public:
 
 	// call this from main thread to add a job once it has been set up
 	// Note: Make sure that all jobs which this job depend on are already added to the pool
+	// Note: jobs will start running immediately, if possible.
 	void addJobToPool(job* whichJob)
 	{
-		if(whichJob->getJobState() == job::state::initialized)
+		job::state current = whichJob->getJobState();
+		if(current == job::state::initialized || current == job::state::complete)
 		{
+			masterMutex.lock();
 			if(whichJob->canRun())
 			{
 				whichJob->setState(job::state::queued);
-
-				masterMutex.lock();
 				// add to job queue
 				jobQueue.push(whichJob);
-				// wake up master thread
-				masterCond.notify_all();
-				masterMutex.unlock();
 			}else
 			{
 				whichJob->setState(job::state::waiting);
-
-				masterMutex.lock();
-				// add to job queue
+				// add to wait list
 				waitList.insert(whichJob);
-				// wake up master thread
-				masterCond.notify_all();
-				masterMutex.unlock();
 			}
+			// wake up master thread
+			masterCond.notify_all();
+			masterMutex.unlock();
 		}
 	}
 
@@ -193,6 +194,7 @@ private:
 
 	std::condition_variable externalCond;
 
+	bool jobDone;
 	std::queue<job*> jobQueue;
 	std::set<job*> waitList;
 	
@@ -242,10 +244,10 @@ private:
 				worker[id].job = NULL;
 				lock.unlock();
 
-				thisJob->setState(job::state::complete);
-
 				// notify master job is done
 				masterMutex.lock();
+				thisJob->setState(job::state::complete);	
+				jobDone = true;
 				workingThreads--;
 				masterCond.notify_all();
 				masterMutex.unlock();
@@ -266,20 +268,24 @@ private:
 		while(!killMaster)
 		{
 			// can any new jobs run?
-			for(std::set<job*>::iterator I = waitList.begin(); I != waitList.end(); /* nothing here */)
+			if(jobDone)
 			{
-				job* j = *I;
-				if(j->canRun())
+				for(std::set<job*>::iterator I = waitList.begin(); I != waitList.end(); /* nothing here */)
 				{
-					// move it to the queue
-					jobQueue.push(j);
-					// and erase and increment
-					waitList.erase(I++);
-				}else
-				{
-					// otherwise check the next one
-					++I;
+					job* j = *I;
+					if(j->canRun())
+					{
+						// move it to the queue
+						jobQueue.push(j);
+						// and erase and increment
+						waitList.erase(I++);
+					}else
+					{
+						// otherwise check the next one
+						++I;
+					}
 				}
+				jobDone = false;
 			}
 			// debug check to make sure we don't have jobs which can't be satisfied
 			assert( !(!waitList.empty() && jobQueue.empty() && workingThreads == 0) );

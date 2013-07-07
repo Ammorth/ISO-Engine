@@ -189,10 +189,6 @@ int main()
 		{
 			// update game	
 
-			camJob.init();
-			mapJob.init();
-			viewJob.init();
-
 			workPool.addJobToPool(&camJob);
 			workPool.addJobToPool(&mapJob);
 			workPool.addJobToPool(&viewJob);
@@ -204,25 +200,10 @@ int main()
 			accumulator -= targetMicrosecond;
 		}
 
-		const double interpolate = static_cast<double>(accumulator) / static_cast<double>(targetMicrosecond);
+		const double interpolate = 1 - static_cast<double>(accumulator) / static_cast<double>(targetMicrosecond);
 
 		// render with interpolation
-		/*
-		if(renderClock.getElapsedTime().asMicroseconds() < targetMicroseconds)
-		{
-			unsigned long long delay = targetMicroseconds - renderClock.getElapsedTime().asMicroseconds();
-			const unsigned long long error = 2000;
-			if(delay > error * 2)
-			{
-				std::this_thread::sleep_for(std::chrono::microseconds(delay-error));
-			}
-			while(renderClock.getElapsedTime().asMicroseconds() < targetMicroseconds);
-		}
-		double FPS = MICROSECONDS_PER_SECOND / static_cast<double>(renderClock.restart().asMicroseconds());
-		std::stringstream infoBuffer;
 		
-		infoBuffer << "FPS: " << std::fixed << std::setprecision(2) << std::setw(7) << FPS << "  Load: " << std::setw(6) << workAmount;
-		*/
 		std::stringstream infoBuffer;
 
 		double FPS = static_cast<double>(MICROSECONDS_PER_SECOND) / static_cast<double>(frameTime);
@@ -230,7 +211,7 @@ int main()
 		
 		infoBuffer << "FPS: " << std::fixed << std::setprecision(2) << std::setw(6) << FPS << "  Load: " << std::setw(6) << actualLoad;
 		infoBuffer << "\nCAM: " << std::setw(9) << cameraPos.x << ", " << std::setw(9) << cameraPos.y;
-		infoBuffer << "\nACC: " << std::setw(6) << accumulator << "  FRM: " << std::setw(6) << frameTime;
+		infoBuffer << "\nACC: " << std::setw(5) << accumulator << " " << interpolate << "  FRM: " << std::setw(5) << frameTime;
 
 		infoText.setString(infoBuffer.str());
 
