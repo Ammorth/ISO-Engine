@@ -62,22 +62,12 @@ unsigned int ISO::map::getDefaultHeight()
 	return default_z;
 }
 
-bool ISO::map::setCamera(sf::Vector2f cameraView)
-{
-	cam = cameraView;
-	return true;
-}
-sf::Vector2f ISO::map::getCamera()
-{
-	return cam;
-}
-
 ISO::tile* ISO::map::getMapTile(unsigned int x, unsigned int y)
 {
 	return &mapTiles[x][y];
 }
 
-void ISO::map::draw(sf::RenderTarget& target, sf::RenderStates states) const
+void ISO::map::preDraw(sf::Vector2f camera)
 {
 	// figure out which tiles will be drawn
 	// x = 0, y = 0 is at the top
@@ -117,7 +107,8 @@ void ISO::map::draw(sf::RenderTarget& target, sf::RenderStates states) const
 	}
 
 	//so now we want to loop through all the tiles and add them to the vertexlist*/
-	sf::VertexArray tilesToDraw(sf::Quads, size_x * size_y * 4);
+	tilesToDraw.setPrimitiveType(sf::Quads);
+	tilesToDraw.resize(size_x * size_y * 4);
 	int x = 0;
 	int y = 0;
 	// each "tile line"
@@ -158,10 +149,10 @@ void ISO::map::draw(sf::RenderTarget& target, sf::RenderStates states) const
 			tilesToDraw[3].texCoords = sf::Vector2f(float(textureRect.left)						, float(textureRect.top + textureRect.height));
 			*/
 			
-			tilesToDraw[index*4+0].position = sf::Vector2f(cam.x + x_draw				, cam.y + y_draw);
-			tilesToDraw[index*4+1].position = sf::Vector2f(cam.x + x_draw + tile_width	, cam.y + y_draw);
-			tilesToDraw[index*4+2].position = sf::Vector2f(cam.x + x_draw + tile_width	, cam.y + y_draw + tile_width);
-			tilesToDraw[index*4+3].position = sf::Vector2f(cam.x + x_draw				, cam.y + y_draw + tile_width);
+			tilesToDraw[index*4+0].position = sf::Vector2f(camera.x + x_draw				, camera.y + y_draw);
+			tilesToDraw[index*4+1].position = sf::Vector2f(camera.x + x_draw + tile_width	, camera.y + y_draw);
+			tilesToDraw[index*4+2].position = sf::Vector2f(camera.x + x_draw + tile_width	, camera.y + y_draw + tile_width);
+			tilesToDraw[index*4+3].position = sf::Vector2f(camera.x + x_draw				, camera.y + y_draw + tile_width);
 			sf::Rect<unsigned int> textureRect = mapTiles[x][y].getTextureRect();
 			tilesToDraw[index*4+0].texCoords = sf::Vector2f(float(textureRect.left)						, float(textureRect.top));
 			tilesToDraw[index*4+1].texCoords = sf::Vector2f(float(textureRect.left + textureRect.width)	, float(textureRect.top));
@@ -174,6 +165,11 @@ void ISO::map::draw(sf::RenderTarget& target, sf::RenderStates states) const
 	}
 
 	//OutputDebugString(L"Draw End!\n");
+}
+
+void ISO::map::draw(sf::RenderTarget& target, sf::RenderStates states) const
+{
+	
 
 	states.texture = defaultSet->getTexture();
 

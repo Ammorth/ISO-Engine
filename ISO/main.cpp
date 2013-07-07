@@ -10,27 +10,30 @@
 #include <Windows.h>
 #include "jobPool.h"
 
-class uselessJob : public ISO::jobPool::job
+class job_preDrawMap : public ISO::jobPool::job
 {
+public:
+	ISO::map* map;
+	sf::Vector2f* cam;
+
+	job_preDrawMap(ISO::map* whichMap = NULL, sf::Vector2f* camera = NULL) : map(whichMap), cam(camera) {}
+
 private:
-	void execute()
+	void operator()()
 	{
-		int r = 0;
-		for(unsigned int i = 0; i < 100000; i++)
-		{
-			r = rand();
-		}
+		map->preDraw(*cam);
 	}
 };
 
-class updateCamera : public ISO::jobPool::job
+class job_updateCamera : public ISO::jobPool::job
 {
 public:
 	std::vector<bool>* keys;
 	sf::Vector2f* cam;
-	ISO::map* map;
+
+	job_updateCamera(sf::Vector2f* camera = NULL, std::vector<bool>* keyStates = NULL) : cam(camera), keys(keyStates) {}
 private:
-	void execute()
+	void operator()()
 	{
 		if((*keys)[sf::Keyboard::Left])
 		{
@@ -48,7 +51,6 @@ private:
 		{
 			cam->y -= 5;
 		}
-		map->setCamera(*cam);
 	}
 };
 
@@ -80,13 +82,10 @@ int main()
 
 	ISO::jobPool workPool;
 
-	uselessJob slowJob;
+	job_updateCamera camJob(&camera, &keyState);
 
-	updateCamera camJob;
-	camJob.cam = &camera;
-	camJob.keys = &keyState;
-	camJob.map = &mymap;
-	camJob.addDependancy(&slowJob);
+	job_preDrawMap mapJob(&mymap, &camera);
+	mapJob.addDependancy(&camJob);
 
 	const sf::Uint64 maxFrameTime = MICROSECONDS_PER_SECOND;
 	        
@@ -148,11 +147,11 @@ int main()
 		{
 			// update game	
 
-			slowJob.init();
 			camJob.init();
+			mapJob.init();
 
-			workPool.addJobToPool(&slowJob);
 			workPool.addJobToPool(&camJob);
+			workPool.addJobToPool(&mapJob);
 			
 			workPool.waitForJobs();
 

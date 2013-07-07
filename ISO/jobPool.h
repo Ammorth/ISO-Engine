@@ -67,7 +67,7 @@ public:
 		}
 
 		// needs to overload
-		virtual void execute()
+		virtual void operator()()
 		{
 		}
 	private:
@@ -136,7 +136,10 @@ public:
 			worker[i].thread.join();
 		}
 		// and master thread
+		masterMutex.lock();
 		killMaster = true;
+		masterCond.notify_all();
+		masterMutex.unlock();
 		masterThread.join();
 	}
 
@@ -198,7 +201,6 @@ private:
 
 	std::queue<job*> jobQueue;
 	std::set<job*> waitList;
-	std::queue<job*> doneQueue;
 	
 	class worker
 	{
@@ -238,7 +240,7 @@ private:
 				lock.unlock();
 				// doing work
 				
-				thisJob->execute();
+				(*thisJob)();
 				// done work
 				
 				// we need to clear our job before we notify master so that it can give us a new job right away
@@ -246,9 +248,10 @@ private:
 				worker[id].job = NULL;
 				lock.unlock();
 
+				thisJob->setState(job::state::complete);
+
 				// notify master job is done
 				masterMutex.lock();
-				doneQueue.push(thisJob);
 				workingThreads--;
 				masterCond.notify_all();
 				masterMutex.unlock();
@@ -268,38 +271,24 @@ private:
 		std::unique_lock<std::mutex> lock(masterMutex);
 		while(!killMaster)
 		{
-			// any jobs done since last run?
-			bool checkWaiting = false;
-			while(!doneQueue.empty())
+			// can any new jobs run?
+			for(std::set<job*>::iterator I = waitList.begin(); I != waitList.end(); /* nothing here */)
 			{
-				job* j = doneQueue.front();
-				doneQueue.pop();
-				
-				// update state
-				j->setState(job::state::complete);
-
-				checkWaiting = true;
-			}
-			if(checkWaiting)
-			{
-				for(std::set<job*>::iterator I = waitList.begin(); I != waitList.end(); /* nothing here */)
+				job* j = *I;
+				if(j->canRun())
 				{
-					job* j = *I;
-					if(j->canRun())
-					{
-						// move it to the queue
-						jobQueue.push(j);
-						// and erase and increment
-						waitList.erase(I++);
-					}else
-					{
-						// otherwise check the next one
-						++I;
-					}
+					// move it to the queue
+					jobQueue.push(j);
+					// and erase and increment
+					waitList.erase(I++);
+				}else
+				{
+					// otherwise check the next one
+					++I;
 				}
 			}
 			// debug check to make sure we don't have jobs which can't be satisfied
-			assert(waitList.empty() || !jobQueue.empty() || workingThreads != 0);
+			assert( !(!waitList.empty() && jobQueue.empty() && workingThreads == 0) );
 			// see if there are any threads we can assign work
 
 			for(unsigned int i = 0; i < worker.size(); ++i)

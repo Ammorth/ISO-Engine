@@ -24,17 +24,16 @@ public:
 	bool setDefaultHeight(unsigned int height);
 	unsigned int getDefaultHeight();
 
-	bool setCamera(sf::Vector2f cameraView);
-	sf::Vector2f getCamera();
-
 	tile* getMapTile(unsigned int x, unsigned int y);
+
+	void ISO::map::preDraw(sf::Vector2f camera);
 
 private:
 	unsigned int size_x,size_y,default_z;
 	
 	tileset* defaultSet;
 
-	sf::Vector2f cam;
+	sf::VertexArray tilesToDraw;
 
 	std::vector< std::vector< ISO::tile > > mapTiles;
 
