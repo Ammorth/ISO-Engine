@@ -14,14 +14,18 @@ class job_preDrawMap : public ISO::jobPool::job
 {
 public:
 	ISO::map* map;
-	sf::Rect<int>* cam;
+	sf::Vector2f* cameraPos;
+	sf::Vector2u* winSize;
 
-	job_preDrawMap(ISO::map* whichMap = NULL, sf::Rect<int>* camera = NULL) : map(whichMap), cam(camera) {}
+	job_preDrawMap(	ISO::map* whichMap,
+					sf::Vector2f* cameraPosition,
+					sf::Vector2u* windowSize ) 
+					: map(whichMap), cameraPos(cameraPosition), winSize(windowSize) {}
 
 private:
 	void operator()()
 	{
-		map->preDraw(*cam);
+		map->preDraw(*cameraPos, *winSize);
 	}
 };
 
@@ -29,28 +33,48 @@ class job_updateCamera : public ISO::jobPool::job
 {
 public:
 	std::vector<bool>* keys;
-	sf::Rect<int>* cam;
+	sf::Vector2f* cameraPos;
 
-	job_updateCamera(sf::Rect<int>* camera = NULL, std::vector<bool>* keyStates = NULL) : cam(camera), keys(keyStates) {}
+	job_updateCamera( std::vector<bool>* keysPressed,
+					sf::Vector2f* cameraPosition ) 
+					: keys(keysPressed), cameraPos(cameraPosition) {}
+
 private:
 	void operator()()
 	{
 		if((*keys)[sf::Keyboard::Left])
-		{
-			cam->left += 5;
-		}
+			cameraPos->x -= 5;
 		if((*keys)[sf::Keyboard::Right])
-		{
-			cam->left -= 5;
-		}
+			cameraPos->x += 5;
 		if((*keys)[sf::Keyboard::Up])
-		{
-			cam->top += 5;
-		}
+			cameraPos->y -= 5;
 		if((*keys)[sf::Keyboard::Down])
-		{
-			cam->top -= 5;
-		}
+			cameraPos->y += 5;
+	}
+};
+
+class job_updateViews : public ISO::jobPool::job
+{
+public:
+	sf::Vector2f* cameraPos;
+	sf::Vector2u* winSize;
+	sf::View* worldView;
+	sf::View* uiView;
+
+	job_updateViews(	sf::Vector2f* cameraPosition,
+						sf::Vector2u* windowSize,
+						sf::View* worldView,
+						sf::View* uiView)
+						: cameraPos(cameraPosition), winSize(windowSize), worldView(worldView), uiView(uiView) {}
+
+private:
+	void operator()()
+	{
+		worldView->setSize(static_cast<float>(winSize->x), static_cast<float>(winSize->y));
+		uiView->setSize(static_cast<float>(winSize->x), static_cast<float>(winSize->y));
+
+		worldView->setCenter(*cameraPos);
+		uiView->setCenter(static_cast<float>(winSize->x) / 2.f, static_cast<float>(winSize->y) / 2.f);
 	}
 };
 
@@ -59,7 +83,12 @@ const sf::Uint64 MICROSECONDS_PER_SECOND = 1000000;
 int main()
 {
 	std::vector<bool> keyState(256, false);
-    sf::RenderWindow window(sf::VideoMode(800, 600), "XCB Error Test");
+    sf::RenderWindow window(sf::VideoMode(800, 600), "ISO Engine");
+
+	sf::Vector2u windowSize(800,600);
+	sf::Vector2f cameraPos(0,0);
+	sf::View worldView = window.getView();
+	sf::View uiView = window.getView();
 
 	sf::Clock gameClock;
 
@@ -86,14 +115,15 @@ int main()
 	sf::Uint64 currentTime = gameClock.getElapsedTime().asMicroseconds();
 	sf::Uint64 accumulator = 0;
 
-	sf::Rect<int> camera(0,0,800,600);
-
 	ISO::jobPool workPool;
 
-	job_updateCamera camJob(&camera, &keyState);
+	job_updateCamera camJob(&keyState, &cameraPos);
 
-	job_preDrawMap mapJob(&mymap, &camera);
+	job_preDrawMap mapJob(&mymap, &cameraPos, &windowSize);
 	mapJob.addDependancy(&camJob);
+
+	job_updateViews viewJob(&cameraPos, &windowSize, &worldView, &uiView);
+	viewJob.addDependancy(&camJob);
 
 	const sf::Uint64 maxFrameTime = MICROSECONDS_PER_SECOND;
 	        
@@ -107,6 +137,10 @@ int main()
             if (event.type == sf::Event::Closed)
             {
                 window.close();
+			}else if(event.type == sf::Event::Resized)
+			{
+				windowSize.x = event.size.width;
+				windowSize.y = event.size.height;
             }else if(event.type == sf::Event::KeyPressed)
 			{
 				if(event.key.code < 256 && event.key.code >= 0)
@@ -157,9 +191,11 @@ int main()
 
 			camJob.init();
 			mapJob.init();
+			viewJob.init();
 
 			workPool.addJobToPool(&camJob);
 			workPool.addJobToPool(&mapJob);
+			workPool.addJobToPool(&viewJob);
 			
 			workPool.waitForJobs();
 
@@ -192,12 +228,20 @@ int main()
 		double FPS = static_cast<double>(MICROSECONDS_PER_SECOND) / static_cast<double>(frameTime);
 		double actualLoad = static_cast<double>(actualFrameTime) / static_cast<double>(targetMicrosecond) *100;
 		
-		infoBuffer << "FPS: " << std::setw(7) << FPS << "  Load: " << std::setw(6) << actualLoad;
+		infoBuffer << "FPS: " << std::fixed << std::setprecision(2) << std::setw(6) << FPS << "  Load: " << std::setw(6) << actualLoad;
+		infoBuffer << "\nCAM: " << std::setw(9) << cameraPos.x << ", " << std::setw(9) << cameraPos.y;
+		infoBuffer << "\nACC: " << std::setw(6) << accumulator << "  FRM: " << std::setw(6) << frameTime;
 
 		infoText.setString(infoBuffer.str());
 
         window.clear();
+		// draw world
+		window.setView(worldView);
 		window.draw(mymap);
+
+		// draw UI
+		window.setView(uiView);
+
 		window.draw(infoText);
         window.display(); 
     }

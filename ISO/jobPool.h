@@ -147,36 +147,30 @@ public:
 	// Note: Make sure that all jobs which this job depend on are already added to the pool
 	void addJobToPool(job* whichJob)
 	{
-		whichJob->stateMutex.lock();
-		if(whichJob->curState == job::state::initialized)
+		if(whichJob->getJobState() == job::state::initialized)
 		{
-			whichJob->stateMutex.unlock();
-			bool ready = true;
-			for(std::set<job*>::iterator I = whichJob->dependsOn.begin(); I != whichJob->dependsOn.end(); ++I)
+			if(whichJob->canRun())
 			{
-				if((*I)->getJobState() != job::state::complete)
-				{
-					ready = false;
-				}
-			}
-			whichJob->stateMutex.lock();
-			if(ready)
-			{
-				// add to job queue;
+				whichJob->setState(job::state::queued);
+
+				masterMutex.lock();
+				// add to job queue
 				jobQueue.push(whichJob);
-				whichJob->curState = job::state::queued;
 				// wake up master thread
 				masterCond.notify_all();
+				masterMutex.unlock();
 			}else
 			{
-				// add to wait queue
+				whichJob->setState(job::state::waiting);
+
+				masterMutex.lock();
+				// add to job queue
 				waitList.insert(whichJob);
-				whichJob->curState = job::state::waiting;
 				// wake up master thread
 				masterCond.notify_all();
+				masterMutex.unlock();
 			}
 		}
-		whichJob->stateMutex.unlock();
 	}
 
 	// call this on the main thread once all jobs have been setup to wait for them all to finish

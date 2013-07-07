@@ -26,7 +26,7 @@ public:
 
 	tile* getMapTile(unsigned int x, unsigned int y);
 
-	void ISO::map::preDraw(sf::Rect<int> camera);
+	void ISO::map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSize);
 
 private:
 	unsigned int size_x,size_y,default_z;

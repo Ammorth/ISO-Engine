@@ -67,16 +67,21 @@ ISO::tile* ISO::map::getMapTile(unsigned int x, unsigned int y)
 	return &mapTiles[x][y];
 }
 
-void ISO::map::preDraw(sf::Rect<int> camera)
+void ISO::map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSize)
 {
 	// figure out which tiles will be drawn
-	// x = 0, y = 0 is at the top
-	// x goes down and right,
-	// y goes down and left
-	// top left = 0,0;
+
 	int tile_size = 128;
 	int tile_width = 128;
 	int tile_height = 64;
+
+	// build the camera bounds
+	sf::Rect<float> cameraBounds;
+	cameraBounds.width = static_cast<float>(windowSize.x);
+	cameraBounds.height = static_cast<float>(windowSize.y);
+	cameraBounds.left = camera.x - (cameraBounds.width / 2);
+	cameraBounds.top = camera.y - (cameraBounds.height / 2);
+
 	/*
 	sf::Vector2f topLeft = toIsometric(sf::Vector2u(cam.left, cam.top));
 	sf::Vector2f topRight = toIsometric(sf::Vector2u(cam.left + cam.width, cam.top));
@@ -129,13 +134,16 @@ void ISO::map::preDraw(sf::Rect<int> camera)
 		{
 			for(unsigned int height = 0; height <= mapTiles[x][y].getHeight(); ++height)
 			{
-				int x_draw = camera.left + x * (tile_width / 2) - y * (tile_width / 2);
-				int y_draw = camera.top + x * (tile_height / 2) + y * (tile_height / 2) - tile_height/2 * static_cast<int>(height);
-
-				if(x_draw + tile_size < 0 || x_draw > camera.width || y_draw + tile_size < 0 || y_draw > camera.height)
-				{
+				int x_draw = x * (tile_width / 2) - y * (tile_width / 2);
+				int y_draw = x * (tile_height / 2) + y * (tile_height / 2) - tile_height/2 * static_cast<int>(height);
+				
+				// check bounds
+				if(	x_draw + tile_size < cameraBounds.left ||
+					x_draw > cameraBounds.left + cameraBounds.width ||
+					y_draw + tile_size < cameraBounds.top ||
+					y_draw > cameraBounds.top + cameraBounds.height )
 					continue;
-				}
+
 
 				sf::Vertex v1;
 				sf::Vertex v2;
@@ -161,14 +169,10 @@ void ISO::map::preDraw(sf::Rect<int> camera)
 			x++;
 		}
 	}
-
-	//OutputDebugString(L"Draw End!\n");
 }
 
 void ISO::map::draw(sf::RenderTarget& target, sf::RenderStates states) const
 {
-	
-
 	states.texture = defaultSet->getTexture();
 
 	target.draw(tilesToDraw, states);
