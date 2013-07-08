@@ -23,36 +23,75 @@ bool ISO::tileset::loadFromFile(std::string fileName)
 	if(valid)
 	{
 		textureSizeX = texture.getSize().x / 4;
-		textureSizeY = texture.getSize().y / 4;
+		textureSizeY = texture.getSize().y / 8;
 	}
 	return valid;
 }
 
-sf::Rect<unsigned int> ISO::tileset::getTextureRect(unsigned int tileType)
+sf::Rect<unsigned int> ISO::tileset::getTextureRect(unsigned int tileType, unsigned int height)
 {
-	//TLBR
-	//0000 = 0
-	//0001 = 1
-	//0010 = 2
-	//0011 = 3
-	//0100 = 4
-	//0101 = 5
-	//0110 = 6
-	//0111 = 7
-	//1000 = 8
-	//1001 = 9
-	//1010 = 10
-	//1011 = 11
-	//1100 = 12
-	//1101 = 13
-	//1110 = 14
-	//1111 = 15
+	bool isDouble = height % 2 == 1;
 	sf::Rect<unsigned int> out;
 	out.top = (textureSizeY) * (tileType / 4);
 	out.left = (textureSizeX) * (tileType % 4);
 	out.width = textureSizeX;
 	out.height = textureSizeY;
+	if(!isDouble)
+	{
+		out.top += textureSizeY * 4;
+	}
 	return out;	
+}
+
+unsigned int ISO::tileset::pointHeightToType(unsigned int top, unsigned int left, unsigned int bottom, unsigned int right)
+{
+	// its ugly, but it works
+	if(top)
+		if(left)
+			if(bottom)
+				if(right)
+					return 0;	// tblr
+				else // not right
+					return 12;	// tbl_
+			else // not bottom
+				if(right)
+					return 13;	// tl_r
+				else // not right
+					return 8;	// tl__
+		else // not left
+			if(bottom)
+				if(right)
+					return 14;	// tb_r
+				else // not right
+					return 2;	// tb__
+			else // not bottom
+				if(right)
+					return 9;	// t__r
+				else // not right
+					return 5;	// t___
+	else// not top
+		if(left)
+			if(bottom)
+				if(right)
+					return 15;	// _blr
+				else // not right
+					return 11;	// _bl_
+			else // not bottom
+				if(right)
+					return 3;	// _l_r
+				else // not right
+					return 4;	// _l__
+		else // not left
+			if(bottom)
+				if(right)
+					return 10;	// _b_r
+				else // not right
+					return 7;	// _b__
+			else // not bottom
+				if(right)
+					return 6;	// ___r
+				else // not right
+					return 1;	// ____
 }
 
 bool ISO::tileset::isValid()

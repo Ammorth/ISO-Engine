@@ -97,16 +97,17 @@ int main()
 	sf::Text infoText("", consola, 15);
 	infoText.setColor(sf::Color::White);
 
-	ISO::tileset grass("assets/textures/tiles/grass.png");
-	ISO::map mymap(10,10,2,&grass);
+	ISO::tileset grass("assets/textures/tiles/grass_double.png");
+	ISO::map mymap(5,5,4,&grass);
 
-	for(unsigned int i = 0; i < 10; ++i)
-	{
-		for(unsigned int j = 0; j < 10; ++j)
-		{
-			mymap.getMapTile(i,j)->setHeight(rand() % 2);
-		}
-	}
+	mymap.getMapTile(2,1)->setHeight(5);
+	mymap.getMapTile(2,2)->setHeight(5);
+	mymap.getMapTile(2,2)->setType(ISO::tileset::pointHeightToType(1,0,0,1));
+	mymap.getMapTile(2,3)->setHeight(4);
+	mymap.getMapTile(2,3)->setType(ISO::tileset::pointHeightToType(1,0,0,1));
+	mymap.getMapTile(3,3)->setHeight(4);
+	mymap.getMapTile(3,3)->setType(ISO::tileset::pointHeightToType(1,0,0,0));
+	mymap.getMapTile(4,4)->setDrawBase(false);
 
 	sf::Uint64 targetFPS = 60;
 	sf::Uint64 targetMicrosecond = MICROSECONDS_PER_SECOND / static_cast<unsigned long int>(targetFPS);

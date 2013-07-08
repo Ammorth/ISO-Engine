@@ -16,11 +16,13 @@ public:
 
 	bool loadFromFile(std::string fileName);
 
-	sf::Rect<unsigned int> getTextureRect(unsigned int tileType);
+	sf::Rect<unsigned int> getTextureRect(unsigned int tileType, unsigned int height);
 
 	bool isValid();
 
 	const sf::Texture* getTexture() const;
+
+	static unsigned int pointHeightToType(unsigned int top, unsigned int left, unsigned int bottom, unsigned int right);
 
 private:
 	std::string file;
