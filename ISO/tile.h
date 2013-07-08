@@ -28,7 +28,7 @@ public:
 	tileset* getTileSet() const;
 
 	sf::Rect<unsigned int> getTextureRect() const;
-	sf::Rect<unsigned int> getBaseTextureRect() const;
+	sf::Rect<unsigned int> getBaseTextureRect(unsigned int height) const;
 
 	bool getDrawBase();
 	void setDrawBase(bool draw);

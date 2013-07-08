@@ -133,13 +133,13 @@ void ISO::map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSiz
 		while(y >= 0 && x < int(size_x))
 		{
 			unsigned int height = mapTiles[x][y].getHeight();
-			unsigned int drawHeight = 0;
+			unsigned int drawHeight = mapTiles[x][y].getBaseTill();
 			int x_draw = x * (tile_width / 2) - y * (tile_width / 2);
-			int y_draw = x * (tile_height / 2) + y * (tile_height / 2);
+			int y_draw = x * (tile_height / 2) + y * (tile_height / 2) - drawHeight * tile_height/2;
 			// draw base tiles first
 			if(mapTiles[x][y].getDrawBase())
 			{
-				while(height > 1)
+				while(drawHeight < height)
 				{
 					// check bounds
 					if(	x_draw + tile_size < cameraBounds.left ||
@@ -147,8 +147,8 @@ void ISO::map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSiz
 						y_draw + tile_size < cameraBounds.top ||
 						y_draw > cameraBounds.top + cameraBounds.height )
 					{
-						y_draw -= tile_height;
-						height -= 2;
+						y_draw -= tile_height/2;
+						drawHeight++;
 						continue;
 					}
 					// draw base height;
@@ -160,7 +160,7 @@ void ISO::map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSiz
 					v2.position = sf::Vector2f( static_cast<float>(x_draw + tile_width)	, static_cast<float>(y_draw));
 					v3.position = sf::Vector2f( static_cast<float>(x_draw + tile_width)	, static_cast<float>(y_draw + tile_width));
 					v4.position = sf::Vector2f( static_cast<float>(x_draw)				, static_cast<float>(y_draw + tile_width));
-					sf::Rect<unsigned int> textureRect = mapTiles[x][y].getBaseTextureRect();
+					sf::Rect<unsigned int> textureRect = mapTiles[x][y].getBaseTextureRect(drawHeight);
 					v1.texCoords = sf::Vector2f(float(textureRect.left)						, float(textureRect.top));
 					v2.texCoords = sf::Vector2f(float(textureRect.left + textureRect.width)	, float(textureRect.top));
 					v3.texCoords = sf::Vector2f(float(textureRect.left + textureRect.width)	, float(textureRect.top + textureRect.height));
@@ -170,17 +170,16 @@ void ISO::map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSiz
 					tilesToDraw.append(v2);
 					tilesToDraw.append(v3);
 					tilesToDraw.append(v4);
-					height -= 2;
-					y_draw -= tile_height;
 
-				
+					y_draw -= tile_height/2;
+					drawHeight++;
 				}
 			}else
 			{
-				while(height > 1)
+				while(drawHeight < height)
 				{
-					y_draw -= tile_height;
-					height -= 2;
+					y_draw -= tile_height/2;
+					drawHeight++;
 				}
 			}
 			// draw final tile;

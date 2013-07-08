@@ -94,11 +94,11 @@ sf::Rect<unsigned int> ISO::tile::getTextureRect() const
 	}
 }
 
-sf::Rect<unsigned int> ISO::tile::getBaseTextureRect() const
+sf::Rect<unsigned int> ISO::tile::getBaseTextureRect(unsigned int height) const
 {
 	if(tile_set)
 	{
-		return tile_set->getTextureRect(0, 1);
+		return tile_set->getTextureRect(15, height);
 	}else
 	{
 		return sf::Rect<unsigned int>();
@@ -120,5 +120,11 @@ unsigned int ISO::tile::getBaseTill()
 }
 void ISO::tile::setBaseTill(unsigned int base)
 {
-	baseTil = base;
+	if(z_height >= base)
+	{
+		baseTil = base;
+	}else
+	{
+		baseTil = z_height;
+	}
 }
