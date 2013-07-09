@@ -24,7 +24,9 @@ public:
 	bool setDefaultHeight(unsigned int height);
 	unsigned int getDefaultHeight();
 
-	tile* getMapTile(unsigned int x, unsigned int y);
+	tile* getMapTile(unsigned int x, unsigned int y, unsigned int zOrder = 0);
+
+	tile* addTileToMap(unsigned int x, unsigned int y, unsigned int height, unsigned int tiletype = 0, tileset* tileSet = NULL, bool base = true, unsigned int baseTill = 0);
 
 	void ISO::map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSize);
 
@@ -35,7 +37,7 @@ private:
 
 	sf::VertexArray tilesToDraw;
 
-	std::vector< std::vector< ISO::tile > > mapTiles;
+	std::vector< std::vector< std::vector< ISO::tile > > > mapTiles;
 
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 

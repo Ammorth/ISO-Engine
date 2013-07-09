@@ -98,17 +98,51 @@ int main()
 	infoText.setColor(sf::Color::White);
 
 	ISO::tileset grass("assets/textures/tiles/grass_new.png");
-	ISO::map mymap(5,5,3,&grass);
+	ISO::map mymap(5,5,1,&grass);
 
-	mymap.getMapTile(2,1)->setHeight(5);
-	mymap.getMapTile(2,1)->setBaseTill(4);
-	mymap.getMapTile(2,2)->setHeight(4);
-	mymap.getMapTile(2,2)->setType(ISO::tileset::pointHeightToType(1,0,0,1));
-	mymap.getMapTile(2,3)->setHeight(3);
-	mymap.getMapTile(2,3)->setType(ISO::tileset::pointHeightToType(1,0,0,1));
-	mymap.getMapTile(3,3)->setHeight(3);
-	mymap.getMapTile(3,3)->setType(ISO::tileset::pointHeightToType(1,0,0,0));
-	mymap.getMapTile(4,4)->setBaseTill(1);
+	mymap.getMapTile(0,0,0)->setHeight(5);
+	mymap.getMapTile(0,0,0)->setBaseTill(4);
+	mymap.addTileToMap(0,0,1);
+
+	mymap.getMapTile(0,1,0)->setHeight(5);
+	mymap.getMapTile(0,1,0)->setBaseTill(4);
+	mymap.addTileToMap(0,1,1);
+
+	mymap.getMapTile(1,0,0)->setHeight(4);
+	mymap.getMapTile(1,0,0)->setType(true, true, false, false);
+
+	mymap.getMapTile(2,0,0)->setHeight(3);
+	mymap.getMapTile(2,0,0)->setType(true, true, false, false);
+
+	mymap.getMapTile(3,0,0)->setHeight(3);
+
+	mymap.getMapTile(3,1,0)->setHeight(2);
+	mymap.getMapTile(3,1,0)->setType(true, false, false, true);
+
+	mymap.getMapTile(3,2,0)->setHeight(2);
+
+	mymap.getMapTile(4,1,0)->setType(false, true, false, false);
+
+	mymap.getMapTile(4,2,0)->setType(true, true, false, false);
+
+	mymap.getMapTile(4,3,0)->setType(true, false, false, false);
+
+	mymap.getMapTile(3,3,0)->setType(true, false, false, true);
+
+	mymap.getMapTile(2,3,0)->setType(false, false, false, true);
+
+	mymap.getMapTile(2,2,0)->setType(true, false, true, true);
+
+	mymap.getMapTile(2,1,0)->setHeight(2);
+	mymap.getMapTile(2,1,0)->setType(false, false, false, true);
+
+	mymap.getMapTile(1,1,0)->setType(false, false, true, true);
+
+	mymap.getMapTile(1,2,0)->setType(false, false, false, true);
+
+	mymap.addTileToMap(1,1,5,3,NULL,true, 4);
+	mymap.addTileToMap(2,1,6,3,NULL,true, 5);
+	mymap.addTileToMap(3,1,7,0,NULL,true, 6);
 
 	sf::Uint64 targetFPS = 60;
 	sf::Uint64 targetMicrosecond = MICROSECONDS_PER_SECOND / static_cast<unsigned long int>(targetFPS);

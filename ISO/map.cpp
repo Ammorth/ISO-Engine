@@ -18,9 +18,13 @@ ISO::map::~map(void)
 ISO::map::map(unsigned int x, unsigned int y, unsigned int defaultHeight, tileset* defaultTileSet)
 {
 	mapTiles.resize(x);
-	for(unsigned i = 0; i < x; ++i)
+	for(unsigned int i = 0; i < x; ++i)
 	{
-		mapTiles[i].resize(y, tile(defaultTileSet, 0, defaultHeight));
+		mapTiles[i].resize(y);
+		for(unsigned int j = 0; j < y; ++j)
+		{
+			mapTiles[i][j].push_back(tile(defaultTileSet, 0, defaultHeight));
+		}
 	}
 	size_x = x;
 	size_y = y;
@@ -62,9 +66,32 @@ unsigned int ISO::map::getDefaultHeight()
 	return default_z;
 }
 
-ISO::tile* ISO::map::getMapTile(unsigned int x, unsigned int y)
+ISO::tile* ISO::map::getMapTile(unsigned int x, unsigned int y, unsigned int zOrder)
 {
-	return &mapTiles[x][y];
+	return &mapTiles[x][y][zOrder];
+}
+
+ISO::tile* ISO::map::addTileToMap(unsigned int x, unsigned int y, unsigned int height, unsigned int tiletype, tileset* tileSet, bool base, unsigned int baseTill)
+{
+	tile newTile(tileSet, tiletype, height, base, baseTill);
+	if(!tileSet)
+	{
+		newTile.setTileSet(defaultSet);
+	}
+	// figure out where it goes
+	std::vector<tile>::iterator I;
+	for(I = mapTiles[x][y].begin(); I != mapTiles[x][y].end(); ++I)
+	{
+		if(I->getHeight() > height)
+		{
+			// insert here
+			I = mapTiles[x][y].insert(I, newTile);
+			return &(*I);
+		}
+	}
+	// otherwise insert at end
+	mapTiles[x][y].push_back(newTile);
+	return &mapTiles[x][y].back();
 }
 
 void ISO::map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSize)
@@ -132,92 +159,94 @@ void ISO::map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSiz
 		}
 		while(y >= 0 && x < int(size_x))
 		{
-			unsigned int height = mapTiles[x][y].getHeight();
-			unsigned int drawHeight = mapTiles[x][y].getBaseTill();
 			int x_draw = x * (tile_width / 2) - y * (tile_width / 2);
-			int y_draw = x * (tile_height / 2) + y * (tile_height / 2) - drawHeight * tile_height/2;
-			// draw base tiles first
-			if(mapTiles[x][y].getDrawBase())
+			int y_draw = x * (tile_height / 2) + y * (tile_height / 2);
+			for(unsigned int z = 0; z < mapTiles[x][y].size(); ++z)
 			{
-				while(drawHeight < height)
+				unsigned int height = mapTiles[x][y][z].getHeight();
+				unsigned int drawHeight = mapTiles[x][y][z].getBaseTill();
+				int y_temp = y_draw - drawHeight * tile_height/2;
+				// draw base tiles first
+				if(mapTiles[x][y][z].getDrawBase())
 				{
-					// check bounds
-					if(	x_draw + tile_size < cameraBounds.left ||
-						x_draw > cameraBounds.left + cameraBounds.width ||
-						y_draw + tile_size < cameraBounds.top ||
-						y_draw > cameraBounds.top + cameraBounds.height )
+					while(drawHeight < height)
 					{
-						y_draw -= tile_height/2;
+						// check bounds
+						if(	x_draw + tile_size < cameraBounds.left ||
+							x_draw > cameraBounds.left + cameraBounds.width ||
+							y_temp + tile_size < cameraBounds.top ||
+							y_temp > cameraBounds.top + cameraBounds.height )
+						{
+							y_temp -= tile_height/2;
+							drawHeight++;
+							continue;
+						}
+						// draw base height;
+						sf::Vertex v1;
+						sf::Vertex v2;
+						sf::Vertex v3;
+						sf::Vertex v4;
+						v1.position = sf::Vector2f( static_cast<float>(x_draw)				, static_cast<float>(y_temp));
+						v2.position = sf::Vector2f( static_cast<float>(x_draw + tile_width)	, static_cast<float>(y_temp));
+						v3.position = sf::Vector2f( static_cast<float>(x_draw + tile_width)	, static_cast<float>(y_temp + tile_width));
+						v4.position = sf::Vector2f( static_cast<float>(x_draw)				, static_cast<float>(y_temp + tile_width));
+						sf::Rect<unsigned int> textureRect = mapTiles[x][y][z].getBaseTextureRect(drawHeight);
+						v1.texCoords = sf::Vector2f(float(textureRect.left)						, float(textureRect.top));
+						v2.texCoords = sf::Vector2f(float(textureRect.left + textureRect.width)	, float(textureRect.top));
+						v3.texCoords = sf::Vector2f(float(textureRect.left + textureRect.width)	, float(textureRect.top + textureRect.height));
+						v4.texCoords = sf::Vector2f(float(textureRect.left)						, float(textureRect.top + textureRect.height));
+
+						tilesToDraw.append(v1);
+						tilesToDraw.append(v2);
+						tilesToDraw.append(v3);
+						tilesToDraw.append(v4);
+
+						y_temp -= tile_height/2;
 						drawHeight++;
-						continue;
 					}
-					// draw base height;
-					sf::Vertex v1;
-					sf::Vertex v2;
-					sf::Vertex v3;
-					sf::Vertex v4;
-					v1.position = sf::Vector2f( static_cast<float>(x_draw)				, static_cast<float>(y_draw));
-					v2.position = sf::Vector2f( static_cast<float>(x_draw + tile_width)	, static_cast<float>(y_draw));
-					v3.position = sf::Vector2f( static_cast<float>(x_draw + tile_width)	, static_cast<float>(y_draw + tile_width));
-					v4.position = sf::Vector2f( static_cast<float>(x_draw)				, static_cast<float>(y_draw + tile_width));
-					sf::Rect<unsigned int> textureRect = mapTiles[x][y].getBaseTextureRect(drawHeight);
-					v1.texCoords = sf::Vector2f(float(textureRect.left)						, float(textureRect.top));
-					v2.texCoords = sf::Vector2f(float(textureRect.left + textureRect.width)	, float(textureRect.top));
-					v3.texCoords = sf::Vector2f(float(textureRect.left + textureRect.width)	, float(textureRect.top + textureRect.height));
-					v4.texCoords = sf::Vector2f(float(textureRect.left)						, float(textureRect.top + textureRect.height));
-
-					tilesToDraw.append(v1);
-					tilesToDraw.append(v2);
-					tilesToDraw.append(v3);
-					tilesToDraw.append(v4);
-
-					y_draw -= tile_height/2;
-					drawHeight++;
-				}
-			}else
-			{
-				while(drawHeight < height)
+				}else
 				{
-					y_draw -= tile_height/2;
-					drawHeight++;
+					while(drawHeight < height)
+					{
+						y_temp -= tile_height/2;
+						drawHeight++;
+					}
 				}
-			}
-			// draw final tile;
+				// draw final tile;
 				
-			// check bounds
-			if(	x_draw + tile_size < cameraBounds.left ||
-				x_draw > cameraBounds.left + cameraBounds.width ||
-				y_draw + tile_size < cameraBounds.top ||
-				y_draw > cameraBounds.top + cameraBounds.height )
-			{
-				y--;
-				x++;
-				continue;
-			}
+				// check bounds
+				if(	x_draw + tile_size < cameraBounds.left ||
+					x_draw > cameraBounds.left + cameraBounds.width ||
+					y_temp + tile_size < cameraBounds.top ||
+					y_temp > cameraBounds.top + cameraBounds.height )
+				{
+					continue;
+				}
 
-			sf::Vertex v1;
-			sf::Vertex v2;
-			sf::Vertex v3;
-			sf::Vertex v4;
-			v1.position = sf::Vector2f( static_cast<float>(x_draw)				, static_cast<float>(y_draw));
-			v2.position = sf::Vector2f( static_cast<float>(x_draw + tile_width)	, static_cast<float>(y_draw));
-			v3.position = sf::Vector2f( static_cast<float>(x_draw + tile_width)	, static_cast<float>(y_draw + tile_width));
-			v4.position = sf::Vector2f( static_cast<float>(x_draw)				, static_cast<float>(y_draw + tile_width));
-			sf::Rect<unsigned int> textureRect = mapTiles[x][y].getTextureRect();
-			v1.texCoords = sf::Vector2f(float(textureRect.left)						, float(textureRect.top));
-			v2.texCoords = sf::Vector2f(float(textureRect.left + textureRect.width)	, float(textureRect.top));
-			v3.texCoords = sf::Vector2f(float(textureRect.left + textureRect.width)	, float(textureRect.top + textureRect.height));
-			v4.texCoords = sf::Vector2f(float(textureRect.left)						, float(textureRect.top + textureRect.height));
+				sf::Vertex v1;
+				sf::Vertex v2;
+				sf::Vertex v3;
+				sf::Vertex v4;
+				v1.position = sf::Vector2f( static_cast<float>(x_draw)				, static_cast<float>(y_temp));
+				v2.position = sf::Vector2f( static_cast<float>(x_draw + tile_width)	, static_cast<float>(y_temp));
+				v3.position = sf::Vector2f( static_cast<float>(x_draw + tile_width)	, static_cast<float>(y_temp + tile_width));
+				v4.position = sf::Vector2f( static_cast<float>(x_draw)				, static_cast<float>(y_temp + tile_width));
+				sf::Rect<unsigned int> textureRect = mapTiles[x][y][z].getTextureRect();
+				v1.texCoords = sf::Vector2f(float(textureRect.left)						, float(textureRect.top));
+				v2.texCoords = sf::Vector2f(float(textureRect.left + textureRect.width)	, float(textureRect.top));
+				v3.texCoords = sf::Vector2f(float(textureRect.left + textureRect.width)	, float(textureRect.top + textureRect.height));
+				v4.texCoords = sf::Vector2f(float(textureRect.left)						, float(textureRect.top + textureRect.height));
 
-			tilesToDraw.append(v1);
-			tilesToDraw.append(v2);
-			tilesToDraw.append(v3);
-			tilesToDraw.append(v4);
+				tilesToDraw.append(v1);
+				tilesToDraw.append(v2);
+				tilesToDraw.append(v3);
+				tilesToDraw.append(v4);
 	
+			} // end z
 			y--;
-			x++;			
-		}
-	}
+			x++;
+		} // end while
+	} // end for line
 }
 
 void ISO::map::draw(sf::RenderTarget& target, sf::RenderStates states) const

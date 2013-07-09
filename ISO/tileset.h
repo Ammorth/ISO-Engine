@@ -22,7 +22,7 @@ public:
 
 	const sf::Texture* getTexture() const;
 
-	static unsigned int pointHeightToType(unsigned int top, unsigned int left, unsigned int bottom, unsigned int right);
+	static unsigned int pointHeightToType(bool top, bool left, bool bottom, bool right);
 
 private:
 	std::string file;

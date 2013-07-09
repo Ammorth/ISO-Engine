@@ -1,5 +1,6 @@
 #include "tile.h"
 
+#define CHECK_BIT(var,pos) ((var) & (1<<(pos)))
 
 ISO::tile::tile(void)
 	: tile_set(NULL), tile_type(0), z_height(0), drawBase(true), baseTil(0)
@@ -30,7 +31,7 @@ bool ISO::tile::setType(unsigned int type)
 		return false;
 	}
 }
-bool ISO::tile::setType(unsigned int top, unsigned int left, unsigned int bottom, unsigned int right)
+bool ISO::tile::setType(bool top, bool left, bool bottom, bool right)
 {
 	tile_type = ISO::tileset::pointHeightToType(top, left, bottom, right);
 	return true;
@@ -41,19 +42,19 @@ unsigned int ISO::tile::getType() const
 }
 unsigned int ISO::tile::getTop() const
 {
-	return tile_type == 0 || tile_type == 1 || tile_type == 2 || tile_type == 5 || tile_type == 8 || tile_type == 9 || tile_type == 12 || tile_type == 13 || tile_type == 14;
+	return CHECK_BIT(tile_type, 3);
 }
 unsigned int ISO::tile::getLeft() const
 {
-	return tile_type == 0 || tile_type == 1 || tile_type == 3 || tile_type == 4 || tile_type == 8 || tile_type == 11 || tile_type == 12 || tile_type == 13 || tile_type == 15;
+	return CHECK_BIT(tile_type, 2);
 }
 unsigned int ISO::tile::getBottom() const
 {
-	return tile_type == 0 || tile_type == 1 || tile_type == 2 || tile_type == 7 || tile_type == 10 || tile_type == 11 || tile_type == 12 || tile_type == 14 || tile_type == 15;
+	return CHECK_BIT(tile_type, 1);
 }
 unsigned int ISO::tile::getRight() const
 {
-	return tile_type == 0 || tile_type == 1 || tile_type == 3 || tile_type == 6 || tile_type == 9 || tile_type == 10 || tile_type == 13 || tile_type == 14 || tile_type == 15;
+	return CHECK_BIT(tile_type, 0);
 }
 
 bool ISO::tile::setHeight(unsigned int height)

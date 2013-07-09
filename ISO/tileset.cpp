@@ -1,5 +1,6 @@
 #include "tileset.h"
 #include "SFML\Graphics.hpp"
+#include <bitset>
 
 
 ISO::tileset::tileset(void)
@@ -43,55 +44,14 @@ sf::Rect<unsigned int> ISO::tileset::getTextureRect(unsigned int tileType, unsig
 	return out;	
 }
 
-unsigned int ISO::tileset::pointHeightToType(unsigned int top, unsigned int left, unsigned int bottom, unsigned int right)
+unsigned int ISO::tileset::pointHeightToType(bool top, bool left, bool bottom, bool right)
 {
-	// its ugly, but it works
-	if(top)
-		if(left)
-			if(bottom)
-				if(right)
-					return 0;	// tblr
-				else // not right
-					return 12;	// tbl_
-			else // not bottom
-				if(right)
-					return 13;	// tl_r
-				else // not right
-					return 8;	// tl__
-		else // not left
-			if(bottom)
-				if(right)
-					return 14;	// tb_r
-				else // not right
-					return 2;	// tb__
-			else // not bottom
-				if(right)
-					return 9;	// t__r
-				else // not right
-					return 5;	// t___
-	else// not top
-		if(left)
-			if(bottom)
-				if(right)
-					return 15;	// _blr
-				else // not right
-					return 11;	// _bl_
-			else // not bottom
-				if(right)
-					return 3;	// _l_r
-				else // not right
-					return 4;	// _l__
-		else // not left
-			if(bottom)
-				if(right)
-					return 10;	// _b_r
-				else // not right
-					return 7;	// _b__
-			else // not bottom
-				if(right)
-					return 6;	// ___r
-				else // not right
-					return 1;	// ____
+	std::bitset<4> bits;
+	bits.set(0, right);
+	bits.set(1, bottom);
+	bits.set(2, left);
+	bits.set(3, top);
+	return bits.to_ulong();
 }
 
 bool ISO::tileset::isValid()

@@ -14,7 +14,7 @@ public:
 	tile(tileset* set, unsigned int type, unsigned int height, bool base = true, unsigned int baseTill = 0);
 
 	bool setType(unsigned int type);
-	bool setType(unsigned int top, unsigned int left, unsigned int bottom, unsigned int right);
+	bool setType(bool top, bool left, bool bottom, bool right);
 	unsigned int getType() const;
 	unsigned int getTop() const;
 	unsigned int getLeft() const;
