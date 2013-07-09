@@ -236,7 +236,7 @@ int main()
 			accumulator -= targetMicrosecond;
 		}
 
-		const double interpolate = 1 - static_cast<double>(accumulator) / static_cast<double>(targetMicrosecond);
+		const double interpolate = static_cast<double>(accumulator) / static_cast<double>(targetMicrosecond);
 
 		// render with interpolation
 		
