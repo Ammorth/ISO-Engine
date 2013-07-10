@@ -26,20 +26,65 @@ ISO::map::map(unsigned int x, unsigned int y, unsigned int defaultHeight, tilese
 			mapTiles[i][j].push_back(tile(defaultTileSet, 0, defaultHeight));
 		}
 	}
-	size_x = x;
-	size_y = y;
-	default_z = defaultHeight;
+	sizeX = x;
+	sizeY = y;
+	defaultZ = defaultHeight;
 	defaultSet = defaultTileSet;
 }
 
-bool ISO::map::setSize(unsigned int x, unsigned int y)
+bool ISO::map::setSize(unsigned int newX, unsigned int newY)
 {
 	// TODO: write resize command
-	return false;
+	if(sizeX >= newX)
+	{
+		// shrinking x
+		// since nothing is in the heap (that we need to care about), safe to just use resize;
+		mapTiles.resize(newX);
+		sizeX = newX;
+	}else
+	{
+		// expanding x
+		mapTiles.resize(newX);
+		// and then set up the new tiles
+		for(unsigned int x = sizeX; x < newX; ++x)
+		{
+			// ignore newY for this
+			mapTiles[x].resize(sizeY);
+			for(unsigned int y = 0; y < sizeY; ++y)
+			{
+				mapTiles[x][y].push_back(tile(defaultSet, 0, defaultZ));
+			}
+		}
+		sizeX = newX;
+	}
+
+	if(sizeY >= newY)
+	{
+		// shrinking y
+		// since nothing is in the heap (that we need to care about), safe to just use resize;
+		for(unsigned int x = 0; x < sizeX; ++x)
+		{
+			mapTiles[x].resize(newY);
+		}
+		sizeY = newY;
+	}else
+	{
+		// expanding y
+		for(unsigned int x = 0; x < sizeX; ++x)
+		{
+			mapTiles[x].resize(newY);
+			for(unsigned int y = sizeY; y < newY; ++y)
+			{
+				mapTiles[x][y].push_back(tile(defaultSet, 0, defaultZ));
+			}
+		}
+		sizeY = newY;
+	}
+	return true;
 }
 sf::Vector2u ISO::map::getSize()
 {
-	return sf::Vector2u(size_x, size_y);
+	return sf::Vector2u(sizeX, sizeY);
 }
 
 bool ISO::map::setDefaultTileSet(tileset* set)
@@ -58,12 +103,12 @@ ISO::tileset* ISO::map::getDefaultTileSet()
 
 bool ISO::map::setDefaultHeight(unsigned int height)
 {
-	default_z = height;
+	defaultZ = height;
 	return true;
 }
 unsigned int ISO::map::getDefaultHeight()
 {
-	return default_z;
+	return defaultZ;
 }
 
 ISO::tile* ISO::map::getMapTile(unsigned int x, unsigned int y, unsigned int zOrder)
@@ -97,10 +142,6 @@ ISO::tile* ISO::map::addTileToMap(unsigned int x, unsigned int y, unsigned int h
 void ISO::map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSize)
 {
 	// figure out which tiles will be drawn
-
-	int tile_size = 128;
-	int tile_width = 128;
-	int tile_height = 64;
 
 	// build the camera bounds
 	sf::Rect<float> cameraBounds;
@@ -147,17 +188,17 @@ void ISO::map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSiz
 	int y = 0;
 	// each "tile line"
 
-	for(unsigned int i = 0; i < size_x + size_y; ++i)
+	for(unsigned int i = 0; i < sizeX + sizeX; ++i)
 	{
 		
 		y = i;
 		x = 0;
-		while(y >= int(size_y))
+		while(y >= int(sizeY))
 		{
 			y--;
 			x++;
 		}
-		while(y >= 0 && x < int(size_x))
+		while(y >= 0 && x < int(sizeX))
 		{
 			int x_draw = x * (tile_width / 2) - y * (tile_width / 2);
 			int y_draw = x * (tile_height / 2) + y * (tile_height / 2);
@@ -256,12 +297,10 @@ void ISO::map::draw(sf::RenderTarget& target, sf::RenderStates states) const
 	target.draw(tilesToDraw, states);
 }
 
-sf::Vector2f ISO::map::toIsometric(sf::Vector2u point) const
+sf::Vector2i ISO::map::toIsometric(sf::Vector3f point) const
 {
-	sf::Vector2f iso;
-	// tile width = 128;
-	// tile height = 64;
-	iso.x = float(point.y) / 64.f + float(point.x) / 128.f - (float(size_x) * 64.f);
-	iso.y = float(point.y) / 64.f - float(point.x) / 128.f - (float(size_y) * 32.f);
+	sf::Vector2i iso;
+	iso.x = static_cast<int>( floorf( 0.5f + point.x * (static_cast<float>(tile_width) / 2.f) - point.y * (static_cast<float>(tile_width) / 2.f) ) );
+	iso.y = static_cast<int>( floorf( 0.5f + point.x * (static_cast<float>(tile_height) / 2.f) + point.y * (static_cast<float>(tile_height) / 2.f) - point.z * (static_cast<float>(tile_height) / 2.f ) ) );
 	return iso;
 }

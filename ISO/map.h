@@ -10,6 +10,10 @@ namespace ISO
 class map : public sf::Drawable, sf::Transformable
 {
 public:
+	static const int tile_width = 128;
+	static const int tile_height = 64;
+	static const int tile_size = 128;
+
 	map(void);
 	~map(void);
 
@@ -31,7 +35,8 @@ public:
 	void ISO::map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSize);
 
 private:
-	unsigned int size_x,size_y,default_z;
+
+	unsigned int sizeX,sizeY,defaultZ;
 	
 	tileset* defaultSet;
 
@@ -41,7 +46,7 @@ private:
 
 	virtual void draw(sf::RenderTarget& target, sf::RenderStates states) const;
 
-	sf::Vector2f toIsometric(sf::Vector2u point) const;
+	sf::Vector2i toIsometric(sf::Vector3f point) const;
 };
 
 } // end ISO namespace
