@@ -19,7 +19,7 @@ public:
 
 	job_preDrawMap(	ISO::map* whichMap,
 					sf::Vector2f* cameraPosition,
-					sf::Vector2u* windowSize ) 
+					sf::Vector2u* windowSize) 
 					: map(whichMap), cameraPos(cameraPosition), winSize(windowSize) {}
 
 private:
@@ -29,19 +29,44 @@ private:
 	}
 };
 
+class job_getInterpolationCamera : public ISO::jobPool::job
+{
+public:
+	sf::Vector2f* oldCam;
+	sf::Vector2f* newCam;
+	sf::Vector2f* intCam;
+	float* i;
+
+	job_getInterpolationCamera( sf::Vector2f* newCamera,
+								sf::Vector2f* oldCamera,
+								float* interpolation,
+								sf::Vector2f* interpolatedCamera) 
+								: oldCam(oldCamera), newCam(newCamera), i(interpolation), intCam(interpolatedCamera) {}
+
+private:
+	void operator()()
+	{
+		intCam->x = floorf( 0.5 + oldCam->x * (1 - *i) + newCam->x * (*i));
+		intCam->y = floorf( 0.5 + oldCam->y * (1 - *i) + newCam->y * (*i));
+	}
+};
+
 class job_updateCamera : public ISO::jobPool::job
 {
 public:
 	std::vector<bool>* keys;
 	sf::Vector2f* cameraPos;
+	sf::Vector2f* oldCamPos;
 
 	job_updateCamera( std::vector<bool>* keysPressed,
-					sf::Vector2f* cameraPosition ) 
-					: keys(keysPressed), cameraPos(cameraPosition) {}
+					sf::Vector2f* cameraPosition,
+					sf::Vector2f* oldCameraPosition ) 
+					: keys(keysPressed), cameraPos(cameraPosition), oldCamPos(oldCameraPosition) {}
 
 private:
 	void operator()()
 	{
+		*oldCamPos = *cameraPos;
 		if((*keys)[sf::Keyboard::Left])
 			cameraPos->x -= 5;
 		if((*keys)[sf::Keyboard::Right])
@@ -85,8 +110,12 @@ int main()
 	std::vector<bool> keyState(256, false);
     sf::RenderWindow window(sf::VideoMode(800, 600), "ISO Engine");
 
+	float interpolate = 0;
+
 	sf::Vector2u windowSize(800,600);
 	sf::Vector2f cameraPos(0,0);
+	sf::Vector2f oldCameraPos(0,0);
+	sf::Vector2f interpolatedCamera(0,0);
 	sf::View worldView = window.getView();
 	sf::View uiView = window.getView();
 
@@ -151,15 +180,20 @@ int main()
 	sf::Uint64 currentTime = gameClock.getElapsedTime().asMicroseconds();
 	sf::Uint64 accumulator = 0;
 
+	// setup jobs
+
 	ISO::jobPool workPool;
 
-	job_updateCamera camJob(&keyState, &cameraPos);
+	job_updateCamera camJob(&keyState, &cameraPos, &oldCameraPos);
 
-	job_preDrawMap mapJob(&mymap, &cameraPos, &windowSize);
-	mapJob.addDependancy(&camJob);
+	job_getInterpolationCamera intCamJob(&cameraPos, &oldCameraPos, &interpolate, &interpolatedCamera );
+	intCamJob.addDependancy(&camJob);
 
-	job_updateViews viewJob(&cameraPos, &windowSize, &worldView, &uiView);
-	viewJob.addDependancy(&camJob);
+	job_preDrawMap mapJob(&mymap, &interpolatedCamera, &windowSize);
+	mapJob.addDependancy(&intCamJob);
+
+	job_updateViews viewJob(&interpolatedCamera, &windowSize, &worldView, &uiView);
+	viewJob.addDependancy(&intCamJob);
 
 	const sf::Uint64 maxFrameTime = MICROSECONDS_PER_SECOND;
 	        
@@ -226,8 +260,6 @@ int main()
 			// update game	
 
 			workPool.addJobToPool(&camJob);
-			workPool.addJobToPool(&mapJob);
-			workPool.addJobToPool(&viewJob);
 			
 			workPool.waitForJobs();
 
@@ -236,9 +268,15 @@ int main()
 			accumulator -= targetMicrosecond;
 		}
 
-		const double interpolate = static_cast<double>(accumulator) / static_cast<double>(targetMicrosecond);
+		interpolate = static_cast<float>(accumulator) / static_cast<float>(targetMicrosecond);
 
 		// render with interpolation
+
+			workPool.addJobToPool(&intCamJob);
+			workPool.addJobToPool(&mapJob);
+			workPool.addJobToPool(&viewJob);
+
+			workPool.waitForJobs();
 		
 		std::stringstream infoBuffer;
 
@@ -246,7 +284,7 @@ int main()
 		double actualLoad = static_cast<double>(actualFrameTime) / static_cast<double>(targetMicrosecond) *100;
 		
 		infoBuffer << "FPS: " << std::fixed << std::setprecision(2) << std::setw(6) << FPS << "  Load: " << std::setw(6) << actualLoad;
-		infoBuffer << "\nCAM: " << std::setw(9) << cameraPos.x << ", " << std::setw(9) << cameraPos.y;
+		infoBuffer << "\nCAM: " << std::setw(9) << interpolatedCamera.x << ", " << std::setw(9) << interpolatedCamera.y;
 		infoBuffer << "\nACC: " << std::setw(5) << accumulator << " " << interpolate << "  FRM: " << std::setw(5) << frameTime;
 
 		infoText.setString(infoBuffer.str());
@@ -261,6 +299,15 @@ int main()
 
 		window.draw(infoText);
         window.display(); 
+
+		// add some delay to some frames to simulate random loads
+		if(rand() % 100 < 25)
+		{
+			for(unsigned int i = 0; i < 400000; ++i)
+			{
+				int r = rand();
+			}
+		}
     }
     return 0;
 }
