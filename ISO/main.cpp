@@ -46,8 +46,8 @@ public:
 private:
 	void operator()()
 	{
-		intCam->x = floorf( 0.5 + oldCam->x * (1 - *i) + newCam->x * (*i));
-		intCam->y = floorf( 0.5 + oldCam->y * (1 - *i) + newCam->y * (*i));
+		intCam->x = oldCam->x * (1 - *i) + newCam->x * (*i);
+		intCam->y = oldCam->y * (1 - *i) + newCam->y * (*i);
 	}
 };
 
@@ -174,7 +174,10 @@ int main()
 	mymap.addTileToMap(3,1,7,0,NULL,true, 6);
 
 	sf::Uint64 targetFPS = 60;
-	sf::Uint64 targetMicrosecond = MICROSECONDS_PER_SECOND / static_cast<unsigned long int>(targetFPS);
+	sf::Uint64 targetMicrosecond = MICROSECONDS_PER_SECOND / targetFPS;
+
+	sf::Uint64 targetTPS = 120;
+	sf::Uint64 targetGameTick = MICROSECONDS_PER_SECOND / targetTPS;
 
 	sf::Uint64 gameTime = 0;
 	sf::Uint64 currentTime = gameClock.getElapsedTime().asMicroseconds();
@@ -187,7 +190,6 @@ int main()
 	job_updateCamera camJob(&keyState, &cameraPos, &oldCameraPos);
 
 	job_getInterpolationCamera intCamJob(&cameraPos, &oldCameraPos, &interpolate, &interpolatedCamera );
-	intCamJob.addDependancy(&camJob);
 
 	job_preDrawMap mapJob(&mymap, &interpolatedCamera, &windowSize);
 	mapJob.addDependancy(&intCamJob);
@@ -255,7 +257,7 @@ int main()
 
 		accumulator += frameTime;
 
-		while( accumulator >= targetMicrosecond)
+		while( accumulator >= targetGameTick)
 		{
 			// update game	
 
@@ -264,11 +266,11 @@ int main()
 			workPool.waitForJobs();
 
 			// end work
-			gameTime += targetMicrosecond;
-			accumulator -= targetMicrosecond;
+			gameTime += targetGameTick;
+			accumulator -= targetGameTick;
 		}
 
-		interpolate = static_cast<float>(accumulator) / static_cast<float>(targetMicrosecond);
+		interpolate = static_cast<float>(accumulator) / static_cast<float>(targetGameTick);
 
 		// render with interpolation
 
@@ -299,15 +301,6 @@ int main()
 
 		window.draw(infoText);
         window.display(); 
-
-		// add some delay to some frames to simulate random loads
-		if(rand() % 100 < 25)
-		{
-			for(unsigned int i = 0; i < 400000; ++i)
-			{
-				int r = rand();
-			}
-		}
     }
     return 0;
 }
