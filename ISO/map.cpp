@@ -7,6 +7,7 @@
 #include "rapidxml.hpp"
 #include "rapidxml_print.hpp"
 #include <fstream>
+#include <stdlib.h>
 
 
 ISO::map::map(void)
@@ -319,7 +320,6 @@ bool ISO::map::loadFromFile(std::string fileName)
 	std::ifstream file(fileName, std::ios::binary | std::ios::beg);
 	if(file && file.is_open())
 	{
-		std::stringstream convertBuffer;
 		file.seekg(0, file.end);
 		std::streamsize length = file.tellg();
 		file.seekg(0, file.beg);
@@ -330,7 +330,7 @@ bool ISO::map::loadFromFile(std::string fileName)
 		try
 		{
 			xml_document<> doc;
-			doc.parse<0>(buffer);
+			doc.parse<parse_non_destructive>(buffer);
 
 			// now we should have the goods
 
@@ -345,26 +345,16 @@ bool ISO::map::loadFromFile(std::string fileName)
 			xml_attribute<>* defZ = defaults->first_attribute("z");
 			xml_attribute<>* defSet = defZ->next_attribute("tileset");
 
-			convertBuffer << xsize->value();
-			convertBuffer >> sizeX;
-			convertBuffer.str( std::string() );
-			convertBuffer.clear();
+			char* end = xsize->value() + xsize->value_size();
+			sizeX = strtoul(xsize->value(), &end, 10);
 
-			convertBuffer << ysize->value();
-			convertBuffer >> sizeY;
-			convertBuffer.str( std::string() );
-			convertBuffer.clear();
+			end = ysize->value() + ysize->value_size();
+			sizeY = strtoul(ysize->value(), &end, 10);
 
-			convertBuffer << defZ->value();
-			convertBuffer >> defaultZ;
-			convertBuffer.str( std::string() );
-			convertBuffer.clear();
+			end = defZ->value() + defZ->value_size();
+			defaultZ = strtoul(defZ->value(), &end, 10);
 
-			std::string tileFile;
-			convertBuffer << defSet->value();
-			convertBuffer >> tileFile;
-			convertBuffer.str( std::string() );
-			convertBuffer.clear();
+			std::string tileFile = std::string(defSet->value(), defSet->value_size());
 
 			defaultSet = new tileset(tileFile);
 
@@ -382,46 +372,28 @@ bool ISO::map::loadFromFile(std::string fileName)
 			{
 				// get the x and y
 				xml_attribute<>* curAttribute = curTile->first_attribute();
-				unsigned int xpos = 0;
-				convertBuffer << curAttribute->value();
-				convertBuffer >> xpos;
-				convertBuffer.str( std::string() );
-				convertBuffer.clear();
+				end = curAttribute->value() + curAttribute->value_size();
+				unsigned int xpos = strtoul(curAttribute->value(), &end, 10);
 
 				curAttribute = curAttribute->next_attribute("y");
-				unsigned int ypos = 0;
-				convertBuffer << curAttribute->value();
-				convertBuffer >> ypos;
-				convertBuffer.str( std::string() );
-				convertBuffer.clear();
+				end = curAttribute->value() + curAttribute->value_size();
+				unsigned int ypos = strtoul(curAttribute->value(), &end, 10);
 
 				curAttribute = curAttribute->next_attribute("height");
-				unsigned int height = 0;
-				convertBuffer << curAttribute->value();
-				convertBuffer >> height;
-				convertBuffer.str( std::string() );
-				convertBuffer.clear();
+				end = curAttribute->value() + curAttribute->value_size();
+				unsigned int height = strtoul(curAttribute->value(), &end, 10);
 
 				curAttribute = curAttribute->next_attribute("type");
-				unsigned int type = 0;
-				convertBuffer << curAttribute->value();
-				convertBuffer >> type;
-				convertBuffer.str( std::string() );
-				convertBuffer.clear();
+				end = curAttribute->value() + curAttribute->value_size();
+				unsigned int type = strtoul(curAttribute->value(), &end, 10);
 
 				curAttribute = curAttribute->next_attribute("base");
-				bool base = true;
-				convertBuffer << curAttribute->value();
-				convertBuffer >> base;
-				convertBuffer.str( std::string() );
-				convertBuffer.clear();
+				end = curAttribute->value() + curAttribute->value_size();
+				bool base = !!(strtoul(curAttribute->value(), &end, 10)); // !! = implicit cast to bool
 
 				curAttribute = curAttribute->next_attribute("baseTill");
-				unsigned int baseTill = 0;
-				convertBuffer << curAttribute->value();
-				convertBuffer >> baseTill;
-				convertBuffer.str( std::string() );
-				convertBuffer.clear();
+				end = curAttribute->value() + curAttribute->value_size();
+				unsigned int baseTill = strtoul(curAttribute->value(), &end, 10);
 
 				addTileToMap(xpos, ypos, height, type, defaultSet, base, baseTill);
 
