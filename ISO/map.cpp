@@ -366,9 +366,7 @@ bool ISO::map::loadFromFile(std::string fileName)
 			convertBuffer.str( std::string() );
 			convertBuffer.clear();
 
-			// allocte tileset (TODO: eventually create an asset manager)
-
-			defaultSet = new tileset("assets/textures/tiles/grass_new.png"); // this will leak on destruction (for now...)
+			defaultSet = new tileset(tileFile);
 
 			// resize arrays for use
 			mapTiles.resize(sizeX);

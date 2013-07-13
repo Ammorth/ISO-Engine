@@ -126,7 +126,7 @@ int main()
 	sf::Text infoText("", consola, 15);
 	infoText.setColor(sf::Color::White);
 
-	ISO::tileset grass("assets/textures/tiles/grass_new.png");
+	ISO::tileset grass("grass_new");
 	ISO::map mymap(5,5,1,&grass);
 
 	mymap.getMapTile(0,0,0)->setHeight(5);
