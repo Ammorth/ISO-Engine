@@ -82,11 +82,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="jobPool.cpp" />
     <ClCompile Include="map.cpp" />
     <ClCompile Include="main.cpp">
       <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Level3</WarningLevel>
       <FavorSizeOrSpeed Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Speed</FavorSizeOrSpeed>
     </ClCompile>
+    <ClCompile Include="resource.cpp" />
     <ClCompile Include="tile.cpp" />
     <ClCompile Include="tileset.cpp" />
     <ClCompile Include="world.cpp" />
@@ -96,6 +98,7 @@
     <ClInclude Include="map.h" />
     <ClInclude Include="rapidxml.hpp" />
     <ClInclude Include="rapidxml_print.hpp" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="tile.h" />
     <ClInclude Include="tileset.h" />
     <ClInclude Include="world.h" />
