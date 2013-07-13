@@ -17,6 +17,8 @@ public:
 	map(void);
 	~map(void);
 
+	map(std::string fileName);
+
 	map(unsigned int x, unsigned int y, unsigned int defaultHeight, tileset* defaultTileSet);
 
 	bool setSize(unsigned int x, unsigned int y);
@@ -33,6 +35,10 @@ public:
 	tile* addTileToMap(unsigned int x, unsigned int y, unsigned int height, unsigned int tiletype = 0, tileset* tileSet = NULL, bool base = true, unsigned int baseTill = 0);
 
 	void ISO::map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSize);
+
+	bool loadFromFile(std::string fileName);
+
+	bool saveToFile(std::string fileName);
 
 private:
 

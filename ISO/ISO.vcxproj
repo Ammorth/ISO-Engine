@@ -94,6 +94,8 @@
   <ItemGroup>
     <ClInclude Include="jobPool.h" />
     <ClInclude Include="map.h" />
+    <ClInclude Include="rapidxml.hpp" />
+    <ClInclude Include="rapidxml_print.hpp" />
     <ClInclude Include="tile.h" />
     <ClInclude Include="tileset.h" />
     <ClInclude Include="world.h" />

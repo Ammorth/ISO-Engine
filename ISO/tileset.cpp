@@ -21,8 +21,10 @@ ISO::tileset::tileset(std::string fileName)
 bool ISO::tileset::loadFromFile(std::string fileName)
 {
 	valid = texture.loadFromFile(fileName);
+	file = "";
 	if(valid)
 	{
+		file = fileName;
 		textureSizeX = texture.getSize().x / 4;
 		textureSizeY = texture.getSize().y / 8;
 	}
@@ -62,4 +64,9 @@ bool ISO::tileset::isValid()
 const sf::Texture* ISO::tileset::getTexture() const
 {
 	return &texture;
+}
+
+std::string ISO::tileset::getFileName()
+{
+	return file;
 }

@@ -173,10 +173,16 @@ int main()
 	mymap.addTileToMap(2,1,6,3,NULL,true, 5);
 	mymap.addTileToMap(3,1,7,0,NULL,true, 6);
 
+	mymap.setSize(10, 8);
+
+	mymap.saveToFile("testmap.xml");
+
+	mymap.loadFromFile("testmap.xml");
+
 	sf::Uint64 targetFPS = 60;
 	sf::Uint64 targetMicrosecond = MICROSECONDS_PER_SECOND / targetFPS;
 
-	sf::Uint64 targetTPS = 120;
+	sf::Uint64 targetTPS = 30;
 	sf::Uint64 targetGameTick = MICROSECONDS_PER_SECOND / targetTPS;
 
 	sf::Uint64 gameTime = 0;
@@ -202,6 +208,36 @@ int main()
 	// main game loop
     while (window.isOpen())
     {
+		// start next loop
+
+		sf::Uint64 newTime = gameClock.getElapsedTime().asMicroseconds();
+		sf::Uint64 frameTime = newTime - currentTime;
+		sf::Uint64 actualFrameTime = frameTime;
+
+		if(frameTime < targetMicrosecond)
+		{
+			unsigned long long delay = targetMicrosecond - frameTime;
+			const unsigned long long error = 2000;
+			if(delay > error * 2)
+			{
+				std::this_thread::sleep_for(std::chrono::microseconds(delay-error));
+			}
+			do
+			{
+				newTime = gameClock.getElapsedTime().asMicroseconds();
+				frameTime = newTime - currentTime;
+			}while(frameTime < targetMicrosecond);
+			
+		}
+
+		if(frameTime > maxFrameTime)
+		{
+			frameTime = maxFrameTime;
+		}
+		currentTime = newTime;
+
+		accumulator += frameTime;
+
 		// handle events before next loop
         sf::Event event;
         while (window.pollEvent(event))
@@ -227,35 +263,6 @@ int main()
 				}
 			}
         }
-
-		// start next loop
-
-		sf::Uint64 newTime = gameClock.getElapsedTime().asMicroseconds();
-		sf::Uint64 frameTime = newTime - currentTime;
-		sf::Uint64 actualFrameTime = frameTime;
-
-		if(frameTime < targetMicrosecond)
-		{
-			unsigned long long delay = targetMicrosecond - frameTime;
-			const unsigned long long error = 2000;
-			if(delay > error * 2)
-			{
-				std::this_thread::sleep_for(std::chrono::microseconds(delay-error));
-			}
-			do
-			{
-				newTime = gameClock.getElapsedTime().asMicroseconds();
-				frameTime = newTime - currentTime;
-			}while(frameTime < targetMicrosecond);
-		}
-
-		if(frameTime > maxFrameTime)
-		{
-			frameTime = maxFrameTime;
-		}
-		currentTime = newTime;
-
-		accumulator += frameTime;
 
 		while( accumulator >= targetGameTick)
 		{

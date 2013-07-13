@@ -24,6 +24,8 @@ public:
 
 	static unsigned int pointHeightToType(bool top, bool left, bool bottom, bool right);
 
+	std::string getFileName();
+
 private:
 	std::string file;
 	bool valid;

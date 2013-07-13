@@ -4,6 +4,9 @@
 #include <vector>
 #include <windows.h>
 #include <sstream>
+#include "rapidxml.hpp"
+#include "rapidxml_print.hpp"
+#include <fstream>
 
 
 ISO::map::map(void)
@@ -30,6 +33,11 @@ ISO::map::map(unsigned int x, unsigned int y, unsigned int defaultHeight, tilese
 	sizeY = y;
 	defaultZ = defaultHeight;
 	defaultSet = defaultTileSet;
+}
+
+ISO::map::map(std::string fileName)
+{
+	loadFromFile(fileName);
 }
 
 bool ISO::map::setSize(unsigned int newX, unsigned int newY)
@@ -303,4 +311,242 @@ sf::Vector2i ISO::map::toIsometric(sf::Vector3f point) const
 	iso.x = static_cast<int>( floorf( 0.5f + point.x * (static_cast<float>(tile_width) / 2.f) - point.y * (static_cast<float>(tile_width) / 2.f) ) );
 	iso.y = static_cast<int>( floorf( 0.5f + point.x * (static_cast<float>(tile_height) / 2.f) + point.y * (static_cast<float>(tile_height) / 2.f) - point.z * (static_cast<float>(tile_height) / 2.f ) ) );
 	return iso;
+}
+
+bool ISO::map::loadFromFile(std::string fileName)
+{
+	setSize(0,0); // clear the current map
+	std::ifstream file(fileName, std::ios::binary | std::ios::beg);
+	if(file && file.is_open())
+	{
+		std::stringstream convertBuffer;
+		file.seekg(0, file.end);
+		std::streamsize length = file.tellg();
+		file.seekg(0, file.beg);
+		char* buffer = new char[static_cast<unsigned int>(length) + 1];
+		file.read(buffer, length);
+		buffer[length] = '\0'; // null terminate;
+		using namespace rapidxml;
+		try
+		{
+			xml_document<> doc;
+			doc.parse<0>(buffer);
+
+			// now we should have the goods
+
+			xml_node<>* root = doc.first_node();
+			xml_node<>* info = root->first_node("info");
+			xml_node<>* size = info->first_node("size");
+			xml_node<>* defaults = info->first_node("defaults");
+			xml_node<>* tiles = root->first_node("tiles");
+
+			xml_attribute<>* xsize = size->first_attribute("x");
+			xml_attribute<>* ysize = xsize->next_attribute("y");
+			xml_attribute<>* defZ = defaults->first_attribute("z");
+			xml_attribute<>* defSet = defZ->next_attribute("tileset");
+
+			convertBuffer << xsize->value();
+			convertBuffer >> sizeX;
+			convertBuffer.str( std::string() );
+			convertBuffer.clear();
+
+			convertBuffer << ysize->value();
+			convertBuffer >> sizeY;
+			convertBuffer.str( std::string() );
+			convertBuffer.clear();
+
+			convertBuffer << defZ->value();
+			convertBuffer >> defaultZ;
+			convertBuffer.str( std::string() );
+			convertBuffer.clear();
+
+			std::string tileFile;
+			convertBuffer << defSet->value();
+			convertBuffer >> tileFile;
+			convertBuffer.str( std::string() );
+			convertBuffer.clear();
+
+			// allocte tileset (TODO: eventually create an asset manager)
+
+			defaultSet = new tileset("assets/textures/tiles/grass_new.png"); // this will leak on destruction (for now...)
+
+			// resize arrays for use
+			mapTiles.resize(sizeX);
+			for(unsigned int x = 0; x < sizeX; ++x)
+			{
+				mapTiles[x].resize(sizeY);
+			}
+
+			// now to read through the xml and add tiles
+
+			xml_node<>* curTile = tiles->first_node();
+			while(curTile != NULL)
+			{
+				// get the x and y
+				xml_attribute<>* curAttribute = curTile->first_attribute();
+				unsigned int xpos = 0;
+				convertBuffer << curAttribute->value();
+				convertBuffer >> xpos;
+				convertBuffer.str( std::string() );
+				convertBuffer.clear();
+
+				curAttribute = curAttribute->next_attribute("y");
+				unsigned int ypos = 0;
+				convertBuffer << curAttribute->value();
+				convertBuffer >> ypos;
+				convertBuffer.str( std::string() );
+				convertBuffer.clear();
+
+				curAttribute = curAttribute->next_attribute("height");
+				unsigned int height = 0;
+				convertBuffer << curAttribute->value();
+				convertBuffer >> height;
+				convertBuffer.str( std::string() );
+				convertBuffer.clear();
+
+				curAttribute = curAttribute->next_attribute("type");
+				unsigned int type = 0;
+				convertBuffer << curAttribute->value();
+				convertBuffer >> type;
+				convertBuffer.str( std::string() );
+				convertBuffer.clear();
+
+				curAttribute = curAttribute->next_attribute("base");
+				bool base = true;
+				convertBuffer << curAttribute->value();
+				convertBuffer >> base;
+				convertBuffer.str( std::string() );
+				convertBuffer.clear();
+
+				curAttribute = curAttribute->next_attribute("baseTill");
+				unsigned int baseTill = 0;
+				convertBuffer << curAttribute->value();
+				convertBuffer >> baseTill;
+				convertBuffer.str( std::string() );
+				convertBuffer.clear();
+
+				addTileToMap(xpos, ypos, height, type, defaultSet, base, baseTill);
+
+				curTile = curTile->next_sibling();
+			}
+
+		}catch( std::exception const& e)
+		{
+			// TODO: do something with e
+			std::wstringstream conv;
+			conv << e.what();
+			OutputDebugString(conv.str().c_str());
+			delete buffer;
+			file.close();
+			return false;
+		}
+		delete buffer;
+		file.close();
+		return true;
+	}
+	return false;
+}
+
+bool ISO::map::saveToFile(std::string fileName)
+{
+	using namespace rapidxml;
+	std::stringstream buffer;
+	// build the XML doc
+	xml_document<> doc;
+	try
+	{
+		xml_node<>* root = doc.allocate_node(node_element, "isomap");
+		xml_node<>* mapInfo = doc.allocate_node(node_element, "info");
+		mapInfo->append_attribute(doc.allocate_attribute("version", "0.0.0"));
+		xml_node<>* mapSize = doc.allocate_node(node_element, "size");
+
+		buffer << sizeX;
+		mapSize->append_attribute(doc.allocate_attribute("x", doc.allocate_string(buffer.str().c_str())));
+		buffer.str( std::string() );
+		buffer.clear();
+
+		buffer << sizeY;
+		mapSize->append_attribute(doc.allocate_attribute("y", doc.allocate_string(buffer.str().c_str())));
+		buffer.str( std::string() );
+		buffer.clear();
+
+		xml_node<>* defaults = doc.allocate_node(node_element, "defaults");
+		buffer << defaultZ;
+		defaults->append_attribute(doc.allocate_attribute("z", doc.allocate_string(buffer.str().c_str())));
+		buffer.str( std::string() );
+		buffer.clear();
+
+		buffer << defaultSet->getFileName();
+		defaults->append_attribute(doc.allocate_attribute("tileset", doc.allocate_string(buffer.str().c_str())));
+		buffer.str( std::string() );
+		buffer.clear();
+
+		xml_node<>* tiles = doc.allocate_node(node_element, "tiles");
+
+		for(unsigned int x = 0 ; x < sizeX; ++x)
+		{
+			for(unsigned int y = 0; y < sizeY; ++y)
+			{
+				for(unsigned int z = 0; z < mapTiles[x][y].size(); ++z)
+				{
+					xml_node<>* curTile = doc.allocate_node(node_element, "tile");
+					buffer << x;
+					curTile->append_attribute(doc.allocate_attribute("x", doc.allocate_string(buffer.str().c_str())));
+					buffer.str( std::string() );
+					buffer.clear();
+
+					buffer << y;
+					curTile->append_attribute(doc.allocate_attribute("y", doc.allocate_string(buffer.str().c_str())));
+					buffer.str( std::string() );
+					buffer.clear();
+
+					buffer << mapTiles[x][y][z].getHeight();
+					curTile->append_attribute(doc.allocate_attribute("height", doc.allocate_string(buffer.str().c_str())));
+					buffer.str( std::string() );
+					buffer.clear();
+
+					buffer << mapTiles[x][y][z].getType();
+					curTile->append_attribute(doc.allocate_attribute("type", doc.allocate_string(buffer.str().c_str())));
+					buffer.str( std::string() );
+					buffer.clear();
+
+					buffer << mapTiles[x][y][z].getDrawBase();
+					curTile->append_attribute(doc.allocate_attribute("base", doc.allocate_string(buffer.str().c_str())));
+					buffer.str( std::string() );
+					buffer.clear();
+
+					buffer << mapTiles[x][y][z].getBaseTill();
+					curTile->append_attribute(doc.allocate_attribute("baseTill", doc.allocate_string(buffer.str().c_str())));
+					buffer.str( std::string() );
+					buffer.clear();
+
+					tiles->append_node(curTile);
+				}
+			}
+		}
+		
+		
+		doc.append_node(root);
+		root->append_node(mapInfo);
+		mapInfo->append_node(mapSize);
+		mapInfo->append_node(defaults);
+		root->append_node(tiles);
+		
+	}catch(std::exception const& e)
+	{
+		std::wstringstream conv;
+		conv << e.what();
+		OutputDebugString(conv.str().c_str());
+		doc.clear();
+		return false;
+	}
+
+	std::ofstream file(fileName);
+	if(file.is_open())
+	{
+		file << doc;
+		file.close();
+	}
+	doc.clear();
+	return true;
 }
