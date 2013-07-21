@@ -11,7 +11,7 @@ ISO::world::~world(void)
 {
 }
 
-bool ISO::world::addMap(map which, std::string name)
+bool ISO::world::addMap(Map which, std::string name)
 {
 	return worlds.insert(std::make_pair(name, which)).second;
 }

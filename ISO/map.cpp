@@ -1,4 +1,4 @@
-#include "map.h"
+#include "Map.h"
 #include <utility>
 #include <math.h>
 #include <vector>
@@ -10,16 +10,16 @@
 #include <stdlib.h>
 
 
-ISO::map::map(void)
+ISO::Map::Map(void)
 {
 }
 
 
-ISO::map::~map(void)
+ISO::Map::~Map(void)
 {
 }
 
-ISO::map::map(unsigned int x, unsigned int y, unsigned int defaultHeight, tileset* defaultTileSet)
+ISO::Map::Map(unsigned int x, unsigned int y, unsigned int defaultHeight, tileset* defaultTileSet)
 {
 	mapTiles.resize(x);
 	for(unsigned int i = 0; i < x; ++i)
@@ -36,12 +36,12 @@ ISO::map::map(unsigned int x, unsigned int y, unsigned int defaultHeight, tilese
 	defaultSet = defaultTileSet;
 }
 
-ISO::map::map(std::string fileName)
+ISO::Map::Map(std::string fileName)
 {
 	loadFromFile(fileName);
 }
 
-bool ISO::map::setSize(unsigned int newX, unsigned int newY)
+bool ISO::Map::setSize(unsigned int newX, unsigned int newY)
 {
 	// TODO: write resize command
 	if(sizeX >= newX)
@@ -91,12 +91,12 @@ bool ISO::map::setSize(unsigned int newX, unsigned int newY)
 	}
 	return true;
 }
-sf::Vector2u ISO::map::getSize()
+sf::Vector2u ISO::Map::getSize()
 {
 	return sf::Vector2u(sizeX, sizeY);
 }
 
-bool ISO::map::setDefaultTileSet(tileset* set)
+bool ISO::Map::setDefaultTileSet(tileset* set)
 {
 	if(set && set->isValid())
 	{
@@ -105,27 +105,27 @@ bool ISO::map::setDefaultTileSet(tileset* set)
 	}
 	return false;
 }
-ISO::tileset* ISO::map::getDefaultTileSet()
+ISO::tileset* ISO::Map::getDefaultTileSet()
 {
 	return defaultSet;
 }
 
-bool ISO::map::setDefaultHeight(unsigned int height)
+bool ISO::Map::setDefaultHeight(unsigned int height)
 {
 	defaultZ = height;
 	return true;
 }
-unsigned int ISO::map::getDefaultHeight()
+unsigned int ISO::Map::getDefaultHeight()
 {
 	return defaultZ;
 }
 
-ISO::tile* ISO::map::getMapTile(unsigned int x, unsigned int y, unsigned int zOrder)
+ISO::tile* ISO::Map::getMapTile(unsigned int x, unsigned int y, unsigned int zOrder)
 {
 	return &mapTiles[x][y][zOrder];
 }
 
-ISO::tile* ISO::map::addTileToMap(unsigned int x, unsigned int y, unsigned int height, unsigned int tiletype, tileset* tileSet, bool base, unsigned int baseTill)
+ISO::tile* ISO::Map::addTileToMap(unsigned int x, unsigned int y, unsigned int height, unsigned int tiletype, tileset* tileSet, bool base, unsigned int baseTill)
 {
 	tile newTile(tileSet, tiletype, height, base, baseTill);
 	if(!tileSet)
@@ -148,7 +148,7 @@ ISO::tile* ISO::map::addTileToMap(unsigned int x, unsigned int y, unsigned int h
 	return &mapTiles[x][y].back();
 }
 
-void ISO::map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSize)
+void ISO::Map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSize)
 {
 	// figure out which tiles will be drawn
 
@@ -299,14 +299,14 @@ void ISO::map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSiz
 	} // end for line
 }
 
-void ISO::map::draw(sf::RenderTarget& target, sf::RenderStates states) const
+void ISO::Map::draw(sf::RenderTarget& target, sf::RenderStates states) const
 {
 	states.texture = defaultSet->getTexture();
 
 	target.draw(tilesToDraw, states);
 }
 
-sf::Vector2i ISO::map::toIsometric(sf::Vector3f point) const
+sf::Vector2i ISO::Map::toIsometric(sf::Vector3f point) const
 {
 	sf::Vector2i iso;
 	iso.x = static_cast<int>( floorf( 0.5f + point.x * (static_cast<float>(tile_width) / 2.f) - point.y * (static_cast<float>(tile_width) / 2.f) ) );
@@ -314,9 +314,9 @@ sf::Vector2i ISO::map::toIsometric(sf::Vector3f point) const
 	return iso;
 }
 
-bool ISO::map::loadFromFile(std::string fileName)
+bool ISO::Map::loadFromFile(std::string fileName)
 {
-	setSize(0,0); // clear the current map
+	setSize(0,0); // clear the current Map
 	std::ifstream file(fileName, std::ios::binary | std::ios::beg);
 	if(file && file.is_open())
 	{
@@ -417,7 +417,7 @@ bool ISO::map::loadFromFile(std::string fileName)
 	return false;
 }
 
-bool ISO::map::saveToFile(std::string fileName)
+bool ISO::Map::saveToFile(std::string fileName)
 {
 	using namespace rapidxml;
 	std::stringstream buffer;
@@ -425,18 +425,18 @@ bool ISO::map::saveToFile(std::string fileName)
 	xml_document<> doc;
 	try
 	{
-		xml_node<>* root = doc.allocate_node(node_element, "isomap");
-		xml_node<>* mapInfo = doc.allocate_node(node_element, "info");
-		mapInfo->append_attribute(doc.allocate_attribute("version", "0.0.0"));
-		xml_node<>* mapSize = doc.allocate_node(node_element, "size");
+		xml_node<>* root = doc.allocate_node(node_element, "isoMap");
+		xml_node<>* MapInfo = doc.allocate_node(node_element, "info");
+		MapInfo->append_attribute(doc.allocate_attribute("version", "0.0.0"));
+		xml_node<>* MapSize = doc.allocate_node(node_element, "size");
 
 		buffer << sizeX;
-		mapSize->append_attribute(doc.allocate_attribute("x", doc.allocate_string(buffer.str().c_str())));
+		MapSize->append_attribute(doc.allocate_attribute("x", doc.allocate_string(buffer.str().c_str())));
 		buffer.str( std::string() );
 		buffer.clear();
 
 		buffer << sizeY;
-		mapSize->append_attribute(doc.allocate_attribute("y", doc.allocate_string(buffer.str().c_str())));
+		MapSize->append_attribute(doc.allocate_attribute("y", doc.allocate_string(buffer.str().c_str())));
 		buffer.str( std::string() );
 		buffer.clear();
 
@@ -497,9 +497,9 @@ bool ISO::map::saveToFile(std::string fileName)
 		
 		
 		doc.append_node(root);
-		root->append_node(mapInfo);
-		mapInfo->append_node(mapSize);
-		mapInfo->append_node(defaults);
+		root->append_node(MapInfo);
+		MapInfo->append_node(MapSize);
+		MapInfo->append_node(defaults);
 		root->append_node(tiles);
 		
 	}catch(std::exception const& e)

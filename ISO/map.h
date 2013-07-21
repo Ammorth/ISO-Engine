@@ -1,25 +1,25 @@
 #pragma once
 #include <vector>
-#include <map>
+#include <Map>
 #include "tile.h"
 #include "tileset.h"
 
 namespace ISO
 {
 
-class map : public sf::Drawable, sf::Transformable
+class Map : public sf::Drawable, sf::Transformable
 {
 public:
 	static const int tile_width = 128;
 	static const int tile_height = 64;
 	static const int tile_size = 128;
 
-	map(void);
-	~map(void);
+	Map(void);
+	~Map(void);
 
-	map(std::string fileName);
+	Map(std::string fileName);
 
-	map(unsigned int x, unsigned int y, unsigned int defaultHeight, tileset* defaultTileSet);
+	Map(unsigned int x, unsigned int y, unsigned int defaultHeight, tileset* defaultTileSet);
 
 	bool setSize(unsigned int x, unsigned int y);
 	sf::Vector2u getSize();
@@ -34,7 +34,7 @@ public:
 
 	tile* addTileToMap(unsigned int x, unsigned int y, unsigned int height, unsigned int tiletype = 0, tileset* tileSet = NULL, bool base = true, unsigned int baseTill = 0);
 
-	void ISO::map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSize);
+	void ISO::Map::preDraw(const sf::Vector2f& camera, const sf::Vector2u& windowSize);
 
 	bool loadFromFile(std::string fileName);
 

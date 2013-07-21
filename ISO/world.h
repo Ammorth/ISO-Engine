@@ -12,11 +12,11 @@ public:
 	world(void);
 	~world(void);
 
-	bool addMap(map which, std::string name);
+	bool addMap(Map which, std::string name);
 	bool removeMap(std::string name);
 
 private:
-	std::map<std::string, map> worlds;
+	std::map<std::string, Map> worlds;
 };
 
 } // end ISO namespace

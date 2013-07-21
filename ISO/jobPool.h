@@ -12,11 +12,11 @@ namespace ISO
 
 // A class which allows you to create jobs and schedule them on parallel threads.
 // supports job dependancies
-class jobPool
+class JobPool
 {
 public:
 
-	class job
+	class Job
 	{
 	public:
 
@@ -29,13 +29,13 @@ public:
 			complete
 		};
 
-		job(void);
+		Job(void);
 
-		virtual ~job(void);
+		virtual ~Job(void);
 
-		bool addDependancy(job* required);
+		bool addDependancy(Job* required);
 
-		bool removeDependancy(job* notrequired);
+		bool removeDependancy(Job* notrequired);
 
 		state getJobState();
 
@@ -49,22 +49,24 @@ public:
 
 		bool canRun();
 
-		friend class jobPool;
+		friend class JobPool;
 		state curState;
-		std::set<job*> dependsOn;
+		std::set<Job*> dependsOn;
 		std::mutex stateMutex;
 	};
 
 	// default constructor
-	jobPool();
+	JobPool();
+
+	JobPool(unsigned int threads);
 
 	// default destructor
-	~jobPool(void);
+	~JobPool(void);
 
 	// call this from main thread to add a job once it has been set up
 	// Note: Make sure that all jobs which this job depend on are already added to the pool
 	// Note: jobs will start running immediately, if possible.
-	void addJobToPool(job* whichJob);
+	void addJobToPool(Job* whichJob);
 
 	// call this on the main thread once all jobs have been setup to wait for them all to finish
 	void waitForJobs();
@@ -78,8 +80,8 @@ private:
 	std::condition_variable externalCond;
 
 	bool jobDone;
-	std::queue<job*> jobQueue;
-	std::set<job*> waitList;
+	std::queue<Job*> jobQueue;
+	std::set<Job*> waitList;
 	
 	class worker
 	{
@@ -87,7 +89,7 @@ private:
 		std::mutex mutex;
 		std::condition_variable cond;
 		std::thread thread;
-		job* job;
+		Job* job;
 		bool kill;
 
 		worker::worker()
@@ -113,8 +115,8 @@ private:
 	void master_entry();
 
 	// to prevent copy constructors
-	jobPool(jobPool const&);
-	jobPool& operator=(jobPool const&);
+	JobPool(JobPool const&);
+	JobPool& operator=(JobPool const&);
 
 
 };

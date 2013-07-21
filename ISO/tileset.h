@@ -2,12 +2,12 @@
 #include <string>
 #include "SFML\Graphics.hpp"
 #include <vector>
-#include "resource.h"
+#include "Texture.h"
 
 namespace ISO
 {
 
-class tileset : public resource
+class tileset
 {
 public:
 	tileset(void);
@@ -29,12 +29,11 @@ public:
 
 private:
 	const static std::string tileDIR;
-	const static std::string tileFileType;
 
 	std::string fileN;
 	bool valid;
 
-	sf::Texture texture;
+	ISO::Texture texture;
 	unsigned int textureSizeX;
 	unsigned int textureSizeY;
 

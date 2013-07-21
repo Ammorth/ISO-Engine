@@ -8,16 +8,18 @@
 #include "tileset.h"
 #include <stdlib.h>
 #include <Windows.h>
-#include "jobPool.h"
+#include "JobPool.h"
+#include "texture.h"
+#include "FileHandle.h"
 
-class job_preDrawMap : public ISO::jobPool::job
+class job_preDrawMap : public ISO::JobPool::Job
 {
 public:
-	ISO::map* map;
+	ISO::Map* map;
 	sf::Vector2f* cameraPos;
 	sf::Vector2u* winSize;
 
-	job_preDrawMap(	ISO::map* whichMap,
+	job_preDrawMap(	ISO::Map* whichMap,
 					sf::Vector2f* cameraPosition,
 					sf::Vector2u* windowSize) 
 					: map(whichMap), cameraPos(cameraPosition), winSize(windowSize) {}
@@ -29,7 +31,7 @@ private:
 	}
 };
 
-class job_getInterpolationCamera : public ISO::jobPool::job
+class job_getInterpolationCamera : public ISO::JobPool::Job
 {
 public:
 	sf::Vector2f* oldCam;
@@ -51,7 +53,7 @@ private:
 	}
 };
 
-class job_updateCamera : public ISO::jobPool::job
+class job_updateCamera : public ISO::JobPool::Job
 {
 public:
 	std::vector<bool>* keys;
@@ -78,7 +80,7 @@ private:
 	}
 };
 
-class job_updateViews : public ISO::jobPool::job
+class job_updateViews : public ISO::JobPool::Job
 {
 public:
 	sf::Vector2f* cameraPos;
@@ -112,6 +114,11 @@ int main()
 
 	float interpolate = 0;
 
+	ISO::FileHandle::addDirectory("assets/", 0, false);
+	ISO::FileHandle::addDirectory("output/", 1, true);
+
+	ISO::Texture::init();
+
 	sf::Vector2u windowSize(800,600);
 	sf::Vector2f cameraPos(0,0);
 	sf::Vector2f oldCameraPos(0,0);
@@ -127,7 +134,7 @@ int main()
 	infoText.setColor(sf::Color::White);
 
 	ISO::tileset grass("grass_new");
-	ISO::map mymap(5,5,2,&grass);
+	ISO::Map mymap(5,5,2,&grass);
 
 	mymap.getMapTile(0,0,0)->setHeight(6);
 	mymap.getMapTile(0,0,0)->setBaseTill(5);
@@ -193,7 +200,7 @@ int main()
 
 	// setup jobs
 
-	ISO::jobPool workPool;
+	ISO::JobPool workPool;
 
 	job_updateCamera camJob(&keyState, &cameraPos, &oldCameraPos);
 
@@ -311,5 +318,7 @@ int main()
 		window.draw(infoText);
         window.display(); 
     }
+	ISO::Texture::uninit();
+
     return 0;
 }

@@ -2,8 +2,7 @@
 #include "SFML\Graphics.hpp"
 #include <bitset>
 
-const std::string ISO::tileset::tileDIR = "textures/tiles/";
-const std::string ISO::tileset::tileFileType = ".png";
+const std::string ISO::tileset::tileDIR = "tiles/"; // uses texture which is under textures/
 
 ISO::tileset::tileset(void)
 {
@@ -22,15 +21,15 @@ ISO::tileset::tileset(std::string fileName)
 bool ISO::tileset::load(std::string fileName)
 {
 	valid = false;
-	if(resource::load(tileDIR + fileName + tileFileType))
+	// get the texture
+	texture.get(tileDIR + fileName); // load synchronously
+
+	if(texture.isLoaded())
 	{
-		valid = texture.loadFromMemory(getBuffer(), static_cast<size_t>(getBufferSize()));
-		if(valid)
-		{
-			fileN = fileName;
-			textureSizeX = texture.getSize().x / 4;
-			textureSizeY = texture.getSize().y / 8;
-		}
+		valid = true;
+		fileN = fileName;
+		textureSizeX = texture.getPtr()->getSize().x / 4;
+		textureSizeY = texture.getPtr()->getSize().y / 8;
 	}
 	return valid;
 }
@@ -67,7 +66,7 @@ bool ISO::tileset::isValid()
 
 const sf::Texture* ISO::tileset::getTexture() const
 {
-	return &texture;
+	return texture.getPtr();
 }
 
 std::string ISO::tileset::getFileName()

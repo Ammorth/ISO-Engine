@@ -1,16 +1,16 @@
-#include "jobPool.h"
+#include "JobPool.h"
 #include <assert.h>
 
-ISO::jobPool::job::job(void)
+ISO::JobPool::Job::Job(void)
 {
 	curState = initialized;
 }
 
-ISO::jobPool::job::~job(void)
+ISO::JobPool::Job::~Job(void)
 {
 }
 
-bool ISO::jobPool::job::addDependancy(job* required)
+bool ISO::JobPool::Job::addDependancy(Job* required)
 {
 	stateMutex.lock();
 	bool r = false;
@@ -22,7 +22,7 @@ bool ISO::jobPool::job::addDependancy(job* required)
 	return r;
 }
 
-bool ISO::jobPool::job::removeDependancy(job* notrequired)
+bool ISO::JobPool::Job::removeDependancy(Job* notrequired)
 {
 	stateMutex.lock();
 	bool r = false;
@@ -34,7 +34,7 @@ bool ISO::jobPool::job::removeDependancy(job* notrequired)
 	return r;
 }
 
-ISO::jobPool::job::state ISO::jobPool::job::getJobState()
+ISO::JobPool::Job::state ISO::JobPool::Job::getJobState()
 {
 	stateMutex.lock();
 	state s = curState;
@@ -42,19 +42,19 @@ ISO::jobPool::job::state ISO::jobPool::job::getJobState()
 	return s;
 }
 
-void ISO::jobPool::job::setState(state s)
+void ISO::JobPool::Job::setState(state s)
 {
 	stateMutex.lock();
 	curState = s;
 	stateMutex.unlock();
 }
 
-bool ISO::jobPool::job::canRun()
+bool ISO::JobPool::Job::canRun()
 {
-	for(std::set<job*>::iterator I = dependsOn.begin(); I != dependsOn.end(); ++I)
+	for(std::set<Job*>::iterator I = dependsOn.begin(); I != dependsOn.end(); ++I)
 	{
-		job* j = *I;
-		if(j->getJobState() != job::state::complete)
+		Job* j = *I;
+		if(j->getJobState() != Job::state::complete)
 		{
 			return false;
 		}
@@ -63,14 +63,14 @@ bool ISO::jobPool::job::canRun()
 }
 
 
-ISO::jobPool::jobPool()
+ISO::JobPool::JobPool()
 {
 	// hold the master lock while we setup
 	jobDone = false;
 	workingThreads = 0;
 	killMaster = false;
 	masterMutex.lock();
-	masterThread = std::thread(&ISO::jobPool::master_entry, this);
+	masterThread = std::thread(&ISO::JobPool::master_entry, this);
 
 	unsigned int numThreads = std::thread::hardware_concurrency();
 	if(numThreads == 0)
@@ -82,13 +82,38 @@ ISO::jobPool::jobPool()
 	for(unsigned int i = 0; i < numThreads; ++i)
 	{
 		worker[i].kill = false;
-		worker[i].thread = std::thread(&ISO::jobPool::worker_entry, this, i);
+		worker[i].thread = std::thread(&ISO::JobPool::worker_entry, this, i);
 	}
 	masterCond.notify_all();
 	masterMutex.unlock();
 }
 
-ISO::jobPool::~jobPool(void)
+ISO::JobPool::JobPool(unsigned int threads)
+{
+	// hold the master lock while we setup
+	jobDone = false;
+	workingThreads = 0;
+	killMaster = false;
+	masterMutex.lock();
+	masterThread = std::thread(&ISO::JobPool::master_entry, this);
+
+	unsigned int numThreads = threads;
+	if(numThreads == 0)
+	{
+		numThreads = 2;
+	}
+	worker.resize(numThreads);
+	//workerMutex = std::vector<std::mutex>(numThreads);
+	for(unsigned int i = 0; i < numThreads; ++i)
+	{
+		worker[i].kill = false;
+		worker[i].thread = std::thread(&ISO::JobPool::worker_entry, this, i);
+	}
+	masterCond.notify_all();
+	masterMutex.unlock();
+}
+
+ISO::JobPool::~JobPool(void)
 {
 	// join all worker threads
 	for(unsigned int i = 0; i < worker.size(); ++i)
@@ -108,20 +133,20 @@ ISO::jobPool::~jobPool(void)
 }
 
 
-void ISO::jobPool::addJobToPool(job* whichJob)
+void ISO::JobPool::addJobToPool(Job* whichJob)
 {
-	job::state current = whichJob->getJobState();
-	if(current == job::state::initialized || current == job::state::complete)
+	Job::state current = whichJob->getJobState();
+	if(current == Job::state::initialized || current == Job::state::complete)
 	{
 		masterMutex.lock();
 		if(whichJob->canRun())
 		{
-			whichJob->setState(job::state::queued);
+			whichJob->setState(Job::state::queued);
 			// add to job queue
 			jobQueue.push(whichJob);
 		}else
 		{
-			whichJob->setState(job::state::waiting);
+			whichJob->setState(Job::state::waiting);
 			// add to wait list
 			waitList.insert(whichJob);
 		}
@@ -131,7 +156,7 @@ void ISO::jobPool::addJobToPool(job* whichJob)
 	}
 }
 
-void ISO::jobPool::waitForJobs()
+void ISO::JobPool::waitForJobs()
 {
 	std::unique_lock<std::mutex> lock(masterMutex);
 	while(!jobQueue.empty() || !waitList.empty() || workingThreads != 0)
@@ -142,14 +167,14 @@ void ISO::jobPool::waitForJobs()
 	lock.unlock();
 }
 
-void ISO::jobPool::worker_entry(unsigned int id)
+void ISO::JobPool::worker_entry(unsigned int id)
 {
 	std::unique_lock<std::mutex> lock(worker[id].mutex);
 	while(!worker[id].kill)
 	{
 		if(worker[id].job)
 		{
-			job* thisJob = worker[id].job;
+			Job* thisJob = worker[id].job;
 			lock.unlock();
 			// doing work
 				
@@ -163,7 +188,7 @@ void ISO::jobPool::worker_entry(unsigned int id)
 
 			// notify master job is done
 			masterMutex.lock();
-			thisJob->setState(job::state::complete);	
+			thisJob->setState(Job::state::complete);	
 			jobDone = true;
 			workingThreads--;
 			masterCond.notify_all();
@@ -179,7 +204,7 @@ void ISO::jobPool::worker_entry(unsigned int id)
 	lock.unlock();
 }
 
-void ISO::jobPool::master_entry()
+void ISO::JobPool::master_entry()
 {
 	std::unique_lock<std::mutex> lock(masterMutex);
 	while(!killMaster)
@@ -187,9 +212,9 @@ void ISO::jobPool::master_entry()
 		// can any new jobs run?
 		if(jobDone)
 		{
-			for(std::set<job*>::iterator I = waitList.begin(); I != waitList.end(); /* nothing here */)
+			for(std::set<Job*>::iterator I = waitList.begin(); I != waitList.end(); /* nothing here */)
 			{
-				job* j = *I;
+				Job* j = *I;
 				if(j->canRun())
 				{
 					// move it to the queue
@@ -218,7 +243,7 @@ void ISO::jobPool::master_entry()
 				if(worker[i].job == NULL)
 				{
 					worker[i].job = jobQueue.front();
-					worker[i].job->setState(job::state::working);
+					worker[i].job->setState(Job::state::working);
 					jobQueue.pop();
 					workingThreads++;
 					worker[i].cond.notify_all();
