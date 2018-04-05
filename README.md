@@ -21,7 +21,7 @@ Project Goals
 2. Compile without any warnings or issues. 
 3. Utilize the "job" paradigm to effectively utilize system resources.
 4. Create a fully-function map editor GUI which can load, edit, and export maps.
-5. Implement a simple rigid-body physic engine for entities.
-6. Prototype common game elements as C++ base objects and implement general methods for use.
-7. Implement a visibility graph and A* for entities to traverse the environment if needed.
-8. Create a user interface template which makes prototyping user interfaces simple and fast.
+5. Implement a simple rigid-body physics engine for entities.
+6. Prototype common game elements as C++ based objects and implement general methods for use.
+7. Implement a visibility graph and A* search algorithm for entities to traverse the environment if needed.
+8. Create a user interface template which makes prototyping simple and fast.
